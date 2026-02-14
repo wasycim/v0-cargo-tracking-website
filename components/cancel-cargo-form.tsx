@@ -67,7 +67,7 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Ban className="h-4 w-4 text-destructive" />
-            Kargo Iptal
+            Kargo İptal
           </h3>
           <button
             onClick={handleClose}
@@ -80,7 +80,7 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
 
         <div className="p-5">
           <div className="mb-4">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Kargo Takip Numarasi</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Kargo Takip Numarası</label>
             <div className="flex gap-2">
               <Input
                 placeholder="203 XXX XXX"
@@ -110,7 +110,7 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
             <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
               <p className="flex items-center gap-2 text-sm text-destructive">
                 <AlertTriangle className="h-4 w-4" />
-                Kargo bulunamadi veya zaten iptal edilmis.
+                Kargo bulunamadı veya zaten iptal edilmiş.
               </p>
             </div>
           )}
@@ -123,11 +123,11 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
                   <span className="text-sm font-semibold text-foreground">{foundCargo.trackingNo}</span>
                 </div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Gonderici</span>
+                  <span className="text-xs font-medium text-muted-foreground">Gönderici</span>
                   <span className="text-sm text-foreground">{foundCargo.sender.replace(/\n/g, " ")}</span>
                 </div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">Alici</span>
+                  <span className="text-xs font-medium text-muted-foreground">Alıcı</span>
                   <span className="text-sm text-foreground">{foundCargo.receiver.replace(/\n/g, " ")}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -146,7 +146,7 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
                   className="h-4 w-4 rounded border-amber-500 accent-amber-600"
                 />
                 <span className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                  Bu kargoyu iptal etmek istedigimi onayliyorum
+                  Bu kargoyu iptal etmek istediğimi onaylıyorum
                 </span>
               </label>
 
@@ -156,7 +156,7 @@ export function CancelCargoForm({ cargos, onClose, onCancel }: CancelCargoFormPr
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-destructive py-2.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-40"
               >
                 <Ban className="h-4 w-4" />
-                Kargoyu Iptal Et
+                Kargoyu İptal Et
               </button>
             </div>
           )}

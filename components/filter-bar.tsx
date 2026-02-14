@@ -27,7 +27,7 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps) {
           checked={filters.eskiAktif}
           onCheckedChange={(v) => onFilterChange("eskiAktif", v as boolean)}
         />
-        Eski Kargolari Goruntule
+        Eski Kargoları Görüntüle
       </label>
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -35,7 +35,7 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps) {
           checked={filters.iptal}
           onCheckedChange={(v) => onFilterChange("iptal", v as boolean)}
         />
-        Iptal edilenleri goster
+        İptal edilenleri göster
       </label>
     </div>
   )

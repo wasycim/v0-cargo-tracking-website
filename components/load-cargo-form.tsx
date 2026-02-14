@@ -33,7 +33,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
 
   const handleSubmit = () => {
     if (!firma || !kalkisSaati || !varisSaati || !plaka) {
-      alert("Lutfen tum alanlari doldurun")
+      alert("Lütfen tüm alanları doldurun")
       return
     }
     onSubmit(cargoId, { firma, kalkisSaati, varisSaati, plaka, aracTelefon })
@@ -58,7 +58,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="text-sm font-semibold text-foreground">
-            Kargo Yukle - {trackingNo}
+            Kargo Yükle - {trackingNo}
           </h3>
           <button
             onClick={handleClose}
@@ -71,14 +71,14 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
 
         <div className="p-5">
           <div className="mb-4 rounded-lg bg-muted/50 px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">Kalkis Yeri</span>
-            <p className="text-sm font-semibold text-foreground">Izmit (Kocaeli) / Gebze</p>
+            <span className="text-xs font-medium text-muted-foreground">Kalkış Yeri</span>
+            <p className="text-sm font-semibold text-foreground">İzmit (Kocaeli) / Gebze</p>
           </div>
 
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Firma</label>
             <Input
-              placeholder="Tasima firmasini girin"
+              placeholder="Taşıma firmasını girin"
               value={firma}
               onChange={(e) => setFirma(e.target.value)}
               className="border-border bg-background"
@@ -88,7 +88,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Plaka</label>
             <Input
-              placeholder="Arac plakasi"
+              placeholder="Araç plakası"
               value={plaka}
               onChange={(e) => setPlaka(e.target.value.toUpperCase())}
               className="border-border bg-background"
@@ -108,7 +108,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
 
           <div className="mb-4 flex gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkis Saati</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkış Saati</label>
               <Input
                 type="time"
                 value={kalkisSaati}
@@ -117,7 +117,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
               />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Saati</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Varış Saati</label>
               <Input
                 type="time"
                 value={varisSaati}
@@ -132,7 +132,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
             className="flex w-full items-center justify-center gap-2 rounded-md bg-cargo-green py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cargo-dark"
           >
             <Truck className="h-4 w-4" />
-            Yukle
+            Yükle
           </button>
         </div>
       </div>
