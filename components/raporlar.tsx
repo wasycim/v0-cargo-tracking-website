@@ -4,6 +4,11 @@ import { useState } from "react"
 import { KargoRaporu } from "./kargo-raporu"
 import { SubeCiroRaporu } from "./sube-ciro-raporu"
 import { IadeKargolar } from "./iade-kargolar"
+import type { Cargo } from "@/lib/cargo-data"
+
+interface RaporlarProps {
+  cargos: Cargo[]
+}
 
 const tabs = [
   { id: "kargo", label: "Kargo Raporu" },
@@ -11,7 +16,7 @@ const tabs = [
   { id: "iade", label: "Iade Kargolar" },
 ]
 
-export function Raporlar() {
+export function Raporlar({ cargos }: RaporlarProps) {
   const [activeTab, setActiveTab] = useState("kargo")
 
   return (
@@ -36,9 +41,9 @@ export function Raporlar() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "kargo" && <KargoRaporu />}
-      {activeTab === "ciro" && <SubeCiroRaporu />}
-      {activeTab === "iade" && <IadeKargolar />}
+      {activeTab === "kargo" && <KargoRaporu cargos={cargos} />}
+      {activeTab === "ciro" && <SubeCiroRaporu cargos={cargos} />}
+      {activeTab === "iade" && <IadeKargolar cargos={cargos} />}
     </div>
   )
 }

@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LineChart,
   Line,
@@ -25,11 +24,9 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
   const gidenCount = cargos.filter((c) => c.status === "giden").length
   const iptalCount = cargos.filter((c) => c.status === "iptal").length
 
-  // Build chart data from real cargos - group by date
   const chartData = useMemo(() => {
     const dateMap: Record<string, { tutar: number; adet: number }> = {}
 
-    // Seed with last 30 days
     for (let i = 30; i >= 0; i--) {
       const d = new Date()
       d.setDate(d.getDate() - i)
@@ -38,8 +35,7 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
     }
 
     cargos.forEach((c) => {
-      if (c.departureDate) {
-        // departureDate is "DD.MM.YYYY" -> convert to "DD/MM"
+      if (c.departureDate && c.status !== "iptal") {
         const parts = c.departureDate.split(".")
         if (parts.length >= 2) {
           const key = `${parts[0]}.${parts[1]}`
@@ -82,13 +78,13 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
         </div>
       </div>
 
-      {/* Charts - Full Width */}
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      {/* Tutar Chart (top - area) */}
+      <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Satis Grafigi</h3>
+          <h3 className="text-sm font-semibold text-foreground">Tutar Grafigi (TL)</h3>
         </div>
         <div className="p-4">
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="tarih" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
@@ -101,12 +97,8 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
                   fontSize: 12,
                   color: "hsl(var(--foreground))",
                 }}
-                formatter={(value: number, name: string) => [
-                  name === "tutar" ? `${value.toLocaleString("tr-TR")} TL` : value,
-                  name === "tutar" ? "Tutar" : "Adet",
-                ]}
+                formatter={(val: number) => [`${val.toLocaleString("tr-TR")} TL`, "Tutar"]}
               />
-              <Legend />
               <Area
                 type="monotone"
                 dataKey="tutar"
@@ -115,28 +107,44 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
                 fill="hsl(200, 70%, 50%)"
                 fillOpacity={0.15}
                 strokeWidth={2}
-                dot={{ r: 2, fill: "hsl(200, 70%, 50%)" }}
+                dot={{ r: 3, fill: "hsl(200, 70%, 50%)" }}
               />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      </div>
 
-          <div className="mt-4">
-            <ResponsiveContainer width="100%" height={150}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="tarih" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                <Line
-                  type="monotone"
-                  dataKey="adet"
-                  name="Adet"
-                  stroke="hsl(200, 70%, 60%)"
-                  strokeWidth={1.5}
-                  dot={{ r: 2, fill: "hsl(200, 70%, 60%)" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Adet Chart (bottom - line) */}
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h3 className="text-sm font-semibold text-foreground">Adet Grafigi</h3>
+        </div>
+        <div className="p-4">
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="tarih" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
+              <YAxis tick={{ fontSize: 10 }} className="fill-muted-foreground" allowDecimals={false} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: 12,
+                  color: "hsl(var(--foreground))",
+                }}
+                formatter={(val: number) => [val, "Adet"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="adet"
+                name="Adet"
+                stroke="hsl(200, 70%, 60%)"
+                strokeWidth={2}
+                dot={{ r: 3, fill: "hsl(200, 70%, 60%)" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

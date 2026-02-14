@@ -11,36 +11,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { Cargo } from "@/lib/cargo-data"
 
-interface KasaIslemi {
-  id: string
-  kargoTakipNo: string
-  odemeyiAlanSube: string
-  odemeyiYapanKisi: string
-  islemTuru: string
-  devredenTutar: number
-  genelToplam: number
-  aciklama: string
-  islemTarihi: string
-  personel: string
+interface KasaIslemleriProps {
+  cargos: Cargo[]
 }
 
-const mockKasaIslemleri: KasaIslemi[] = [
-  { id: "1", kargoTakipNo: "203515779", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Veysel Pazarci", islemTuru: "Nakit", devredenTutar: 0, genelToplam: 4000, aciklama: "", islemTarihi: "14/02/2026 18:06", personel: "Burak YILMAZ" },
-  { id: "2", kargoTakipNo: "203515711", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Fatih Yagan", islemTuru: "Nakit", devredenTutar: 0, genelToplam: 800, aciklama: "", islemTarihi: "14/02/2026 17:45", personel: "Burak YILMAZ" },
-  { id: "3", kargoTakipNo: "203515650", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Mehmet Ozkan", islemTuru: "Kart", devredenTutar: 0, genelToplam: 1500, aciklama: "", islemTarihi: "14/02/2026 16:30", personel: "Burak YILMAZ" },
-  { id: "4", kargoTakipNo: "203515489", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Ali Yildiz", islemTuru: "Nakit", devredenTutar: 0, genelToplam: 300, aciklama: "", islemTarihi: "14/02/2026 15:12", personel: "Burak YILMAZ" },
-  { id: "5", kargoTakipNo: "203515320", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Hasan Kaya", islemTuru: "Nakit", devredenTutar: 0, genelToplam: 2500, aciklama: "", islemTarihi: "14/02/2026 14:20", personel: "Burak YILMAZ" },
-  { id: "6", kargoTakipNo: "203515210", odemeyiAlanSube: "Gebze", odemeyiYapanKisi: "Emre Demir", islemTuru: "Kart", devredenTutar: 0, genelToplam: 1000, aciklama: "", islemTarihi: "14/02/2026 12:45", personel: "Burak YILMAZ" },
-]
+function parseDDMMYYYY(dateStr: string): Date | null {
+  const parts = dateStr.split(".")
+  if (parts.length !== 3) return null
+  return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+}
 
-export function KasaIslemleri() {
-  const [startDate, setStartDate] = useState("2026-02-14")
-  const [endDate, setEndDate] = useState("2026-02-14")
+export function KasaIslemleri({ cargos }: KasaIslemleriProps) {
+  const today = new Date().toISOString().split("T")[0]
+  const [startDate, setStartDate] = useState(today)
+  const [endDate, setEndDate] = useState(today)
   const [searchText, setSearchText] = useState("")
   const [kasaKapatildi, setKasaKapatildi] = useState(false)
+  const [queryDates, setQueryDates] = useState({ start: today, end: today })
 
-  // Auto kasa kapatma at 03:00
   useEffect(() => {
     const check = () => {
       const now = new Date()
@@ -53,20 +43,51 @@ export function KasaIslemleri() {
     return () => clearInterval(interval)
   }, [])
 
-  const filtered = useMemo(() => {
-    if (!searchText) return mockKasaIslemleri
+  const handleSorgula = () => {
+    setQueryDates({ start: startDate, end: endDate })
+  }
+
+  const kasaIslemleri = useMemo(() => {
+    const start = new Date(queryDates.start)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(queryDates.end)
+    end.setHours(23, 59, 59, 999)
+
+    return cargos
+      .filter((c) => {
+        if (!c.departureDate) return false
+        const d = parseDDMMYYYY(c.departureDate)
+        if (!d) return false
+        return d >= start && d <= end
+      })
+      .map((c) => ({
+        kargoTakipNo: c.trackingNo,
+        odemeyiAlanSube: "Gebze",
+        odemeyiYapanKisi: c.sender.split("\n")[0],
+        islemTuru: c.status === "iptal" ? "Iptal" : "Nakit",
+        devredenTutar: 0,
+        genelToplam: c.status === "iptal" ? 0 : c.amount,
+        aciklama: c.status === "iptal" ? "Iptal edildi" : "",
+        islemTarihi: `${c.departureDate} ${c.departureTime}`,
+        personel: "Personel",
+        isGiris: c.status !== "iptal",
+      }))
+  }, [cargos, queryDates])
+
+  const filteredIslemler = useMemo(() => {
+    if (!searchText) return kasaIslemleri
     const lower = searchText.toLowerCase()
-    return mockKasaIslemleri.filter(
+    return kasaIslemleri.filter(
       (k) =>
-        k.kargoTakipNo.includes(lower) ||
-        k.odemeyiYapanKisi.toLowerCase().includes(lower) ||
-        k.personel.toLowerCase().includes(lower)
+        k.kargoTakipNo.toLowerCase().includes(lower) ||
+        k.odemeyiYapanKisi.toLowerCase().includes(lower)
     )
-  }, [searchText])
+  }, [kasaIslemleri, searchText])
 
   const anlikKasa = useMemo(() => {
-    return kasaKapatildi ? 0 : filtered.reduce((sum, k) => sum + k.genelToplam, 0)
-  }, [filtered, kasaKapatildi])
+    if (kasaKapatildi) return 0
+    return filteredIslemler.reduce((sum, k) => sum + (k.isGiris ? k.genelToplam : 0), 0)
+  }, [filteredIslemler, kasaKapatildi])
 
   return (
     <div className="p-4">
@@ -99,16 +120,19 @@ export function KasaIslemleri() {
         <div className="p-5">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
           <div className="mt-4 flex justify-end">
-            <button className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark">
+            <button
+              onClick={handleSorgula}
+              className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark"
+            >
               <RefreshCw className="h-3.5 w-3.5" />
               Sorgula
             </button>
@@ -147,19 +171,27 @@ export function KasaIslemleri() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {filteredIslemler.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                    Kayit bulunamadi.
+                    Secilen tarih araliginda islem bulunamadi.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((k, i) => (
-                  <TableRow key={k.id} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                filteredIslemler.map((k, i) => (
+                  <TableRow key={`${k.kargoTakipNo}-${i}`} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
                     <TableCell className="text-sm text-foreground">{k.kargoTakipNo}</TableCell>
                     <TableCell className="text-sm text-foreground">{k.odemeyiAlanSube}</TableCell>
                     <TableCell className="text-sm text-foreground">{k.odemeyiYapanKisi}</TableCell>
-                    <TableCell className="text-sm text-foreground">{k.islemTuru}</TableCell>
+                    <TableCell>
+                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                        k.isGiris
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      }`}>
+                        {k.islemTuru}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right text-sm text-foreground">{k.devredenTutar.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right text-sm font-medium text-foreground">{k.genelToplam.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{k.aciklama || "-"}</TableCell>

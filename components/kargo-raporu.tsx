@@ -12,49 +12,63 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { Cargo } from "@/lib/cargo-data"
 
-interface KargoRaporRow {
-  takipNo: string
-  kayitTarihi: string
-  gonderici: string
-  gondericiTelefon: string
-  gondericiTckn: string
-  gondericiTipi: string
-  alici: string
-  aliciTelefon: string
-  aliciTipi: string
-  gonderimTipi: string
-  odemeTipi: string
-  teslimAlan: string
-  teslim: string
+interface KargoRaporuProps {
+  cargos: Cargo[]
 }
 
-const mockKargoRapor: KargoRaporRow[] = [
-  { takipNo: "203515950", kayitTarihi: "14/02/2026 18:48", gonderici: "Muhammet Tiftik", gondericiTelefon: "(537) 651 93 46", gondericiTckn: "31613391186", gondericiTipi: "Gercek Kisi", alici: "Mehmet Avci", aliciTelefon: "(532) 726 55 56", aliciTipi: "Gercek Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-  { takipNo: "203515943", kayitTarihi: "14/02/2026 18:42", gonderici: "Pamukkale Ulasim Seyahat Ve T...", gondericiTelefon: "(850) 333 35 35", gondericiTckn: "7210962642", gondericiTipi: "Tuzel Kisi", alici: "Pamukkale Ulasim Seyahat Ve Tu...", aliciTelefon: "(543) 378 92 51", aliciTipi: "Tuzel Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-  { takipNo: "203515935", kayitTarihi: "14/02/2026 18:41", gonderici: "Huseyin Ocaktan", gondericiTelefon: "(543) 597 38 35", gondericiTckn: "34744013804", gondericiTipi: "Gercek Kisi", alici: "Erkan Akhan", aliciTelefon: "(530) 112 44 17", aliciTipi: "Gercek Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-  { takipNo: "203515929", kayitTarihi: "14/02/2026 18:40", gonderici: "Cemil Ay", gondericiTelefon: "(546) 294 42 35", gondericiTckn: "47431634664", gondericiTipi: "Gercek Kisi", alici: "Atakan Yuruc", aliciTelefon: "(535) 668 81 30", aliciTipi: "Gercek Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-  { takipNo: "203515924", kayitTarihi: "14/02/2026 18:39", gonderici: "Cemil Ay", gondericiTelefon: "(546) 294 42 35", gondericiTckn: "47431634664", gondericiTipi: "Gercek Kisi", alici: "Ekrem Karahanli", aliciTelefon: "(530) 223 40 76", aliciTipi: "Gercek Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-  { takipNo: "203515914", kayitTarihi: "14/02/2026 18:39", gonderici: "Cemil Ay", gondericiTelefon: "(546) 294 42 35", gondericiTckn: "47431634664", gondericiTipi: "Gercek Kisi", alici: "Alperen Ozdemir", aliciTelefon: "(543) 855 42 44", aliciTipi: "Gercek Kisi", gonderimTipi: "Alici Haberli - AH", odemeTipi: "Pesin Odeme - PO(+)", teslimAlan: "", teslim: "" },
-]
+function parseDDMMYYYY(dateStr: string): Date | null {
+  const parts = dateStr.split(".")
+  if (parts.length !== 3) return null
+  return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+}
 
-export function KargoRaporu() {
-  const [startDate, setStartDate] = useState("2026-01-15")
-  const [endDate, setEndDate] = useState("2026-02-14")
+export function KargoRaporu({ cargos }: KargoRaporuProps) {
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+  const today = new Date().toISOString().split("T")[0]
+  const monthAgoStr = oneMonthAgo.toISOString().split("T")[0]
+
+  const [startDate, setStartDate] = useState(monthAgoStr)
+  const [endDate, setEndDate] = useState(today)
   const [searchText, setSearchText] = useState("")
-  const [showDevir, setShowDevir] = useState(false)
   const [showIptal, setShowIptal] = useState(false)
+  const [queryDates, setQueryDates] = useState({ start: monthAgoStr, end: today })
+
+  const handleSorgula = () => {
+    setQueryDates({ start: startDate, end: endDate })
+  }
 
   const filtered = useMemo(() => {
-    if (!searchText) return mockKargoRapor
-    const lower = searchText.toLowerCase()
-    return mockKargoRapor.filter(
-      (r) =>
-        r.takipNo.includes(lower) ||
-        r.gonderici.toLowerCase().includes(lower) ||
-        r.alici.toLowerCase().includes(lower)
-    )
-  }, [searchText])
+    const start = new Date(queryDates.start)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(queryDates.end)
+    end.setHours(23, 59, 59, 999)
+
+    let result = cargos.filter((c) => {
+      if (!c.departureDate) return false
+      const d = parseDDMMYYYY(c.departureDate)
+      if (!d) return false
+      return d >= start && d <= end
+    })
+
+    if (showIptal) {
+      result = result.filter((c) => c.status === "iptal")
+    }
+
+    if (searchText) {
+      const lower = searchText.toLowerCase()
+      result = result.filter(
+        (r) =>
+          r.trackingNo.toLowerCase().includes(lower) ||
+          r.sender.toLowerCase().includes(lower) ||
+          r.receiver.toLowerCase().includes(lower)
+      )
+    }
+
+    return result
+  }, [cargos, queryDates, searchText, showIptal])
 
   return (
     <div>
@@ -66,20 +80,16 @@ export function KargoRaporu() {
         <div className="p-5">
           <div className="mb-4 flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
 
           <div className="mb-4 flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <Checkbox checked={showDevir} onCheckedChange={(v) => setShowDevir(v as boolean)} />
-              Sadece devir kargolari goster
-            </label>
             <label className="flex items-center gap-2 text-sm text-foreground">
               <Checkbox checked={showIptal} onCheckedChange={(v) => setShowIptal(v as boolean)} />
               Sadece iptalleri goster
@@ -87,7 +97,10 @@ export function KargoRaporu() {
           </div>
 
           <div className="flex justify-end">
-            <button className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark">
+            <button
+              onClick={handleSorgula}
+              className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark"
+            >
               <RefreshCw className="h-3.5 w-3.5" />
               Sorgula
             </button>
@@ -113,43 +126,45 @@ export function KargoRaporu() {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="whitespace-nowrap font-semibold text-foreground">Takip No</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Kayit Tarihi</TableHead>
+                <TableHead className="whitespace-nowrap font-semibold text-foreground">Tarih</TableHead>
                 <TableHead className="whitespace-nowrap font-semibold text-foreground">Gonderici</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Gonderici Telefon</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Gonderici Tckn/Vkn</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Gonderici Tipi</TableHead>
                 <TableHead className="whitespace-nowrap font-semibold text-foreground">Alici</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Alici Telefon</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Alici Tipi</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Gonderim Tipi</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Odeme Tipi</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Teslim Alan</TableHead>
-                <TableHead className="whitespace-nowrap font-semibold text-foreground">Teslim</TableHead>
+                <TableHead className="whitespace-nowrap font-semibold text-foreground">Nereden</TableHead>
+                <TableHead className="whitespace-nowrap font-semibold text-foreground">Nereye</TableHead>
+                <TableHead className="whitespace-nowrap text-right font-semibold text-foreground">Tutar</TableHead>
+                <TableHead className="whitespace-nowrap font-semibold text-foreground">Durum</TableHead>
+                <TableHead className="whitespace-nowrap font-semibold text-foreground">Plaka</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                     Kayit bulunamadi.
                   </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((r, i) => (
-                  <TableRow key={r.takipNo} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                    <TableCell className="text-sm text-blue-600 dark:text-blue-400">{r.takipNo}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.kayitTarihi}</TableCell>
-                    <TableCell className="max-w-[180px] truncate text-sm text-foreground">{r.gonderici}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.gondericiTelefon}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.gondericiTckn}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.gondericiTipi}</TableCell>
-                    <TableCell className="max-w-[180px] truncate text-sm text-foreground">{r.alici}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.aliciTelefon}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.aliciTipi}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.gonderimTipi}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.odemeTipi}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{r.teslimAlan || "-"}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{r.teslim || "-"}</TableCell>
+                  <TableRow key={`${r.trackingNo}-${i}`} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                    <TableCell className="text-sm text-blue-600 dark:text-blue-400">{r.trackingNo}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.departureDate} {r.departureTime}</TableCell>
+                    <TableCell className="max-w-[180px] truncate text-sm text-foreground">{r.sender.split("\n")[0]}</TableCell>
+                    <TableCell className="max-w-[180px] truncate text-sm text-foreground">{r.receiver.split("\n")[0]}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.from}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.to}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right text-sm font-medium text-foreground">{r.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell>
+                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                        r.status === "iptal"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          : r.status === "giden"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      }`}>
+                        {r.status === "yuklenecek" ? "Yuklenecek" : r.status === "giden" ? "Giden" : r.status === "iptal" ? "Iptal" : "Teslim"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.plate || "-"}</TableCell>
                   </TableRow>
                 ))
               )}

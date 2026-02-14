@@ -11,37 +11,59 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { Cargo } from "@/lib/cargo-data"
 
-interface IadeKargo {
-  takipNo: string
-  kayitTarihi: string
-  gonderici: string
-  alici: string
-  iadeSebebi: string
-  durum: string
+interface IadeKargolarProps {
+  cargos: Cargo[]
 }
 
-const mockIadeKargolar: IadeKargo[] = [
-  { takipNo: "203514200", kayitTarihi: "13/02/2026 14:20", gonderici: "Ali Veli", alici: "Ahmet Yilmaz", iadeSebebi: "Hasarli urun", durum: "Iade Edildi" },
-  { takipNo: "203513890", kayitTarihi: "12/02/2026 10:15", gonderici: "Mehmet Kara", alici: "Fatma Celik", iadeSebebi: "Yanlis urun", durum: "Iade Surecinde" },
-  { takipNo: "203513450", kayitTarihi: "11/02/2026 16:45", gonderici: "Ayse Demir", alici: "Hakan Oz", iadeSebebi: "Alici red", durum: "Iade Edildi" },
-]
+function parseDDMMYYYY(dateStr: string): Date | null {
+  const parts = dateStr.split(".")
+  if (parts.length !== 3) return null
+  return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+}
 
-export function IadeKargolar() {
-  const [startDate, setStartDate] = useState("2026-01-15")
-  const [endDate, setEndDate] = useState("2026-02-14")
+export function IadeKargolar({ cargos }: IadeKargolarProps) {
+  const oneMonthAgo = new Date()
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+  const today = new Date().toISOString().split("T")[0]
+  const monthAgoStr = oneMonthAgo.toISOString().split("T")[0]
+
+  const [startDate, setStartDate] = useState(monthAgoStr)
+  const [endDate, setEndDate] = useState(today)
   const [searchText, setSearchText] = useState("")
+  const [queryDates, setQueryDates] = useState({ start: monthAgoStr, end: today })
 
-  const filtered = useMemo(() => {
-    if (!searchText) return mockIadeKargolar
-    const lower = searchText.toLowerCase()
-    return mockIadeKargolar.filter(
-      (r) =>
-        r.takipNo.includes(lower) ||
-        r.gonderici.toLowerCase().includes(lower) ||
-        r.alici.toLowerCase().includes(lower)
-    )
-  }, [searchText])
+  const handleSorgula = () => {
+    setQueryDates({ start: startDate, end: endDate })
+  }
+
+  const iptalCargos = useMemo(() => {
+    const start = new Date(queryDates.start)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(queryDates.end)
+    end.setHours(23, 59, 59, 999)
+
+    let result = cargos.filter((c) => {
+      if (c.status !== "iptal") return false
+      if (!c.departureDate) return false
+      const d = parseDDMMYYYY(c.departureDate)
+      if (!d) return false
+      return d >= start && d <= end
+    })
+
+    if (searchText) {
+      const lower = searchText.toLowerCase()
+      result = result.filter(
+        (r) =>
+          r.trackingNo.toLowerCase().includes(lower) ||
+          r.sender.toLowerCase().includes(lower) ||
+          r.receiver.toLowerCase().includes(lower)
+      )
+    }
+
+    return result
+  }, [cargos, queryDates, searchText])
 
   return (
     <div>
@@ -53,16 +75,19 @@ export function IadeKargolar() {
         <div className="p-5">
           <div className="mb-4 flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
           <div className="flex justify-end">
-            <button className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark">
+            <button
+              onClick={handleSorgula}
+              className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark"
+            >
               <RefreshCw className="h-3.5 w-3.5" />
               Sorgula
             </button>
@@ -88,37 +113,31 @@ export function IadeKargolar() {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="font-semibold text-foreground">Takip No</TableHead>
-                <TableHead className="font-semibold text-foreground">Kayit Tarihi</TableHead>
+                <TableHead className="font-semibold text-foreground">Tarih</TableHead>
                 <TableHead className="font-semibold text-foreground">Gonderici</TableHead>
                 <TableHead className="font-semibold text-foreground">Alici</TableHead>
-                <TableHead className="font-semibold text-foreground">Iade Sebebi</TableHead>
-                <TableHead className="font-semibold text-foreground">Durum</TableHead>
+                <TableHead className="font-semibold text-foreground">Nereden</TableHead>
+                <TableHead className="font-semibold text-foreground">Nereye</TableHead>
+                <TableHead className="text-right font-semibold text-foreground">Tutar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {iptalCargos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                    Kayit bulunamadi.
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    Secilen tarih araliginda iptal kargo bulunamadi.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((r, i) => (
-                  <TableRow key={r.takipNo} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                    <TableCell className="text-sm text-blue-600 dark:text-blue-400">{r.takipNo}</TableCell>
-                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.kayitTarihi}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.gonderici}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.alici}</TableCell>
-                    <TableCell className="text-sm text-foreground">{r.iadeSebebi}</TableCell>
-                    <TableCell>
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                        r.durum === "Iade Edildi"
-                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                      }`}>
-                        {r.durum}
-                      </span>
-                    </TableCell>
+                iptalCargos.map((r, i) => (
+                  <TableRow key={`${r.trackingNo}-${i}`} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                    <TableCell className="text-sm text-blue-600 dark:text-blue-400">{r.trackingNo}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm text-foreground">{r.departureDate} {r.departureTime}</TableCell>
+                    <TableCell className="text-sm text-foreground">{r.sender.split("\n")[0]}</TableCell>
+                    <TableCell className="text-sm text-foreground">{r.receiver.split("\n")[0]}</TableCell>
+                    <TableCell className="text-sm text-foreground">{r.from}</TableCell>
+                    <TableCell className="text-sm text-foreground">{r.to}</TableCell>
+                    <TableCell className="text-right text-sm font-medium text-foreground">{r.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
                   </TableRow>
                 ))
               )}

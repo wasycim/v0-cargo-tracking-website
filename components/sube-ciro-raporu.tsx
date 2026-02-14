@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { RefreshCw } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
@@ -11,51 +11,100 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { Cargo } from "@/lib/cargo-data"
+
+interface SubeCiroRaporuProps {
+  cargos: Cargo[]
+}
 
 const subeTabs = [
   { id: "gonderici", label: "Gonderici Sube" },
   { id: "alici", label: "Alici Sube" },
-  { id: "guzergah", label: "Guzergah" },
   { id: "gunluk", label: "Gunluk Toplam" },
 ]
 
-interface CiroRow {
-  sube: string
-  irsaliyeAdet: number
-  kargoAdet: number
-  toplamTutar: number
+function parseDDMMYYYY(dateStr: string): Date | null {
+  const parts = dateStr.split(".")
+  if (parts.length !== 3) return null
+  return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
 }
 
-const mockCiroData: CiroRow[] = [
-  { sube: "Gebze", irsaliyeAdet: 13, kargoAdet: 26, toplamTutar: 11500 },
-]
-
-export function SubeCiroRaporu() {
-  const [startDate, setStartDate] = useState("2026-02-14")
-  const [endDate, setEndDate] = useState("2026-02-14")
+export function SubeCiroRaporu({ cargos }: SubeCiroRaporuProps) {
+  const today = new Date().toISOString().split("T")[0]
+  const [startDate, setStartDate] = useState(today)
+  const [endDate, setEndDate] = useState(today)
   const [activeTab, setActiveTab] = useState("gonderici")
   const [countdown, setCountdown] = useState(120)
+  const [queryDates, setQueryDates] = useState({ start: today, end: today })
 
   const handleRefresh = useCallback(() => {
     setCountdown(120)
-  }, [])
+    setQueryDates({ start: startDate, end: endDate })
+  }, [startDate, endDate])
+
+  const handleSorgula = () => {
+    setQueryDates({ start: startDate, end: endDate })
+    setCountdown(120)
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
-          // Auto-refresh at 0
-          return 120
-        }
+        if (prev <= 1) return 120
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const genelToplam = mockCiroData.reduce((sum, r) => sum + r.toplamTutar, 0)
-  const genelIrsaliye = mockCiroData.reduce((sum, r) => sum + r.irsaliyeAdet, 0)
-  const genelKargo = mockCiroData.reduce((sum, r) => sum + r.kargoAdet, 0)
+  const ciroData = useMemo(() => {
+    const start = new Date(queryDates.start)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(queryDates.end)
+    end.setHours(23, 59, 59, 999)
+
+    const filteredCargos = cargos.filter((c) => {
+      if (c.status === "iptal") return false
+      if (!c.departureDate) return false
+      const d = parseDDMMYYYY(c.departureDate)
+      if (!d) return false
+      return d >= start && d <= end
+    })
+
+    if (activeTab === "gunluk") {
+      const dateMap: Record<string, { adet: number; tutar: number }> = {}
+      filteredCargos.forEach((c) => {
+        const key = c.departureDate
+        if (!dateMap[key]) dateMap[key] = { adet: 0, tutar: 0 }
+        dateMap[key].adet += 1
+        dateMap[key].tutar += c.amount
+      })
+      return Object.entries(dateMap).map(([tarih, data]) => ({
+        sube: tarih,
+        kargoAdet: data.adet,
+        irsaliyeAdet: Math.ceil(data.adet / 2),
+        toplamTutar: data.tutar,
+      }))
+    }
+
+    const subeMap: Record<string, { kargoAdet: number; irsaliyeAdet: number; toplamTutar: number }> = {}
+    filteredCargos.forEach((c) => {
+      const sube = activeTab === "gonderici" ? c.fromCity : c.toCity
+      if (!subeMap[sube]) subeMap[sube] = { kargoAdet: 0, irsaliyeAdet: 0, toplamTutar: 0 }
+      subeMap[sube].kargoAdet += 1
+      subeMap[sube].irsaliyeAdet += c.pieces
+      subeMap[sube].toplamTutar += c.amount
+    })
+
+    return Object.entries(subeMap).map(([sube, data]) => ({
+      sube,
+      ...data,
+    }))
+  }, [cargos, queryDates, activeTab])
+
+  const genelToplam = ciroData.reduce((sum, r) => sum + r.toplamTutar, 0)
+  const genelIrsaliye = ciroData.reduce((sum, r) => sum + r.irsaliyeAdet, 0)
+  const genelKargo = ciroData.reduce((sum, r) => sum + r.kargoAdet, 0)
 
   return (
     <div>
@@ -67,13 +116,22 @@ export function SubeCiroRaporu() {
         <div className="p-5">
           <div className="flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Tarih</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleSorgula}
+              className="flex items-center gap-2 rounded-lg bg-cargo-green px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-dark"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Sorgula
+            </button>
           </div>
         </div>
       </div>
@@ -110,27 +168,37 @@ export function SubeCiroRaporu() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold text-foreground">Sube</TableHead>
+                <TableHead className="font-semibold text-foreground">{activeTab === "gunluk" ? "Tarih" : "Sube"}</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Irsaliye Adet</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Kargo Adet</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Toplam Tutar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockCiroData.map((r, i) => (
-                <TableRow key={r.sube} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
-                  <TableCell className="text-sm text-foreground">{r.sube}</TableCell>
-                  <TableCell className="text-right text-sm text-foreground">{r.irsaliyeAdet}</TableCell>
-                  <TableCell className="text-right text-sm text-foreground">{r.kargoAdet}</TableCell>
-                  <TableCell className="text-right text-sm font-medium text-foreground">{r.toplamTutar.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
+              {ciroData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                    Secilen tarih araliginda kayit bulunamadi.
+                  </TableCell>
                 </TableRow>
-              ))}
-              <TableRow className="bg-muted/50 font-semibold">
-                <TableCell className="text-sm text-foreground">Genel Toplam</TableCell>
-                <TableCell className="text-right text-sm text-foreground">{genelIrsaliye}</TableCell>
-                <TableCell className="text-right text-sm text-foreground">{genelKargo}</TableCell>
-                <TableCell className="text-right text-sm text-foreground">{genelToplam.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
-              </TableRow>
+              ) : (
+                <>
+                  {ciroData.map((r, i) => (
+                    <TableRow key={r.sube} className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}>
+                      <TableCell className="text-sm text-foreground">{r.sube}</TableCell>
+                      <TableCell className="text-right text-sm text-foreground">{r.irsaliyeAdet}</TableCell>
+                      <TableCell className="text-right text-sm text-foreground">{r.kargoAdet}</TableCell>
+                      <TableCell className="text-right text-sm font-medium text-foreground">{r.toplamTutar.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell className="text-sm text-foreground">Genel Toplam</TableCell>
+                    <TableCell className="text-right text-sm text-foreground">{genelIrsaliye}</TableCell>
+                    <TableCell className="text-right text-sm text-foreground">{genelKargo}</TableCell>
+                    <TableCell className="text-right text-sm text-foreground">{genelToplam.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
+                  </TableRow>
+                </>
+              )}
             </TableBody>
           </Table>
         </div>

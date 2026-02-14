@@ -238,10 +238,10 @@ export default function Page() {
       )}
 
       {/* Kasa Islemleri */}
-      {activePage === "kasaislemleri" && <KasaIslemleri />}
+      {activePage === "kasaislemleri" && <KasaIslemleri cargos={cargos} />}
 
       {/* Raporlar */}
-      {activePage === "raporlar" && <Raporlar />}
+      {activePage === "raporlar" && <Raporlar cargos={cargos} />}
 
       {/* Modals */}
       {showNewCargoForm && (

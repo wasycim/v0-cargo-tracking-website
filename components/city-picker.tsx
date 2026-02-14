@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { ChevronDown, X, MapPin } from "lucide-react"
 import { turkeyLocations } from "@/lib/cargo-data"
 
@@ -14,8 +14,10 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [selectedCity, setSelectedCity] = useState("")
+  const [openUpward, setOpenUpward] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -27,6 +29,14 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const checkPosition = useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      setOpenUpward(spaceBelow < 300)
+    }
   }, [])
 
   const filteredCities = useMemo(() => {
@@ -52,10 +62,6 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
     return turkeyLocations[selectedCity] || []
   }, [selectedCity])
 
-  const handleSelectCity = (city: string) => {
-    setSelectedCity(city)
-  }
-
   const handleSelectDistrict = (city: string, district: string) => {
     onChange(`${city} / ${district}`)
     setOpen(false)
@@ -79,15 +85,19 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
   return (
     <div ref={ref} className="relative">
       <div
+        ref={triggerRef}
         className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
         onClick={() => {
+          if (!open) {
+            checkPosition()
+          }
           setOpen(!open)
           if (!open) setTimeout(() => inputRef.current?.focus(), 50)
         }}
       >
-        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         {value ? (
-          <span className="flex-1 text-foreground">{value}</span>
+          <span className="flex-1 truncate text-foreground">{value}</span>
         ) : (
           <span className="flex-1 text-muted-foreground">{placeholder}</span>
         )}
@@ -102,11 +112,15 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
             <X className="h-3.5 w-3.5" />
           </button>
         )}
-        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </div>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-xl">
+        <div
+          className={`absolute left-0 z-[100] w-full overflow-hidden rounded-lg border border-border bg-card shadow-xl ${
+            openUpward ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
+        >
           <div className="border-b border-border p-2">
             <input
               ref={inputRef}
@@ -121,13 +135,12 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
             />
           </div>
 
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-52 overflow-y-auto">
             {search ? (
-              /* Search mode - show matching cities and districts */
               filteredCities.length === 0 ? (
                 <div className="px-3 py-4 text-center text-xs text-muted-foreground">Sonuc bulunamadi</div>
               ) : (
-                filteredCities.slice(0, 30).map((item, i) => (
+                (filteredCities as { type: "city" | "district"; city: string; district?: string; label: string }[]).slice(0, 30).map((item, i) => (
                   <button
                     key={`${item.label}-${i}`}
                     onClick={() => {
@@ -139,13 +152,12 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
                     }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
                   >
-                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <MapPin className="h-3 w-3 shrink-0 text-muted-foreground" />
                     {item.label}
                   </button>
                 ))
               )
             ) : selectedCity ? (
-              /* District selection mode */
               <>
                 <button
                   onClick={() => setSelectedCity("")}
@@ -172,14 +184,13 @@ export function CityPicker({ value, onChange, placeholder = "Il / Ilce secin" }:
                 ))}
               </>
             ) : (
-              /* City list mode */
-              filteredCities.map((city) => (
+              (filteredCities as string[]).map((city) => (
                 <button
-                  key={typeof city === "string" ? city : city.label}
-                  onClick={() => handleSelectCity(typeof city === "string" ? city : city.city)}
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
                   className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
                 >
-                  <span>{typeof city === "string" ? city : city.label}</span>
+                  <span>{city}</span>
                   <ChevronDown className="h-3 w-3 -rotate-90 text-muted-foreground" />
                 </button>
               ))

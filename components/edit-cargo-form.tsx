@@ -22,6 +22,9 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
   const [toCity, setToCity] = useState(cargo.toCity)
   const [pieces, setPieces] = useState(String(cargo.pieces))
   const [amount, setAmount] = useState(String(cargo.amount))
+  const [plate, setPlate] = useState(cargo.plate || "")
+  const [departureTime, setDepartureTime] = useState(cargo.departureTime || "")
+  const [arrivalTime, setArrivalTime] = useState(cargo.arrivalTime || "")
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true))
@@ -41,13 +44,16 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
       toCity,
       pieces: Number(pieces) || 1,
       amount: Number(amount) || 0,
+      plate,
+      departureTime,
+      arrivalTime,
     })
     handleClose()
   }
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-250 ease-out ${
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 transition-all duration-250 ease-out ${
         isVisible && !isClosing ? "bg-black/40 backdrop-blur-sm" : "bg-black/0"
       }`}
       onClick={(e) => {
@@ -55,7 +61,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
       }}
     >
       <div
-        className={`w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl transition-all duration-250 ease-out ${
+        className={`my-auto w-full max-w-lg rounded-xl border border-border bg-card shadow-2xl transition-all duration-250 ease-out ${
           isVisible && !isClosing
             ? "translate-y-0 scale-100 opacity-100"
             : "translate-y-6 scale-95 opacity-0"
@@ -63,7 +69,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="text-sm font-semibold text-foreground">
-            Yeni Kargo Bilgileri - {cargo.trackingNo}
+            Kargo Duzenle - {cargo.trackingNo}
           </h3>
           <button
             onClick={handleClose}
@@ -74,7 +80,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="max-h-[75vh] overflow-y-auto p-5">
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Gonderici</label>
             <Input
@@ -107,7 +113,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
             />
           </div>
 
-          <div className="mb-4 flex gap-3">
+          <div className="mb-3 flex gap-3">
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Parca Sayisi</label>
               <Input
@@ -127,6 +133,42 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
                 onChange={(e) => setAmount(e.target.value)}
                 className="border-border bg-background"
               />
+            </div>
+          </div>
+
+          {/* Otobus / Arac Bilgileri */}
+          <div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
+            <h4 className="mb-3 text-xs font-semibold text-muted-foreground">Otobus / Arac Bilgileri</h4>
+
+            <div className="mb-3">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Plaka</label>
+              <Input
+                placeholder="Arac plakasi"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                className="border-border bg-background"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkis Saati</label>
+                <Input
+                  type="time"
+                  value={departureTime}
+                  onChange={(e) => setDepartureTime(e.target.value)}
+                  className="border-border bg-background"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Saati</label>
+                <Input
+                  type="time"
+                  value={arrivalTime}
+                  onChange={(e) => setArrivalTime(e.target.value)}
+                  className="border-border bg-background"
+                />
+              </div>
             </div>
           </div>
 
