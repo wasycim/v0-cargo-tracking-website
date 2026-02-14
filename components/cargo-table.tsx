@@ -92,9 +92,66 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
     if (subeAyarlar?.sirket_telefon) footerParts.push(subeAyarlar.sirket_telefon)
     const footerText = footerParts.join(" / ")
 
+    const html = [
+      '<!DOCTYPE html><html><head><meta charset="utf-8">',
+      '<title>Barkod - ' + cargo.trackingNo + '</title>',
+      '<style>',
+      '@page { margin: 0; size: 100mm 70mm; }',
+      '* { margin: 0; padding: 0; box-sizing: border-box; }',
+      'body { font-family: Arial, Helvetica, sans-serif; width: 100mm; height: 70mm; padding: 2.5mm; overflow: hidden; }',
+      '.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5mm; }',
+      '.dest-city { font-size: 20pt; font-weight: bold; letter-spacing: 0.5px; line-height: 1.1; }',
+      '.gonderim-kodu { font-size: 9pt; font-weight: bold; text-align: right; }',
+      '.from-city { font-size: 10pt; margin-bottom: 0.3mm; }',
+      '.tracking-no { font-size: 13pt; font-weight: bold; text-align: right; letter-spacing: 1px; }',
+      '.hat-name { font-size: 10pt; font-weight: bold; margin-bottom: 1mm; }',
+      '.info-table { width: 100%; border-collapse: collapse; margin-bottom: 1mm; font-size: 7pt; }',
+      '.info-table td, .info-table th { border: 0.5px solid #000; padding: 1mm 1.5mm; vertical-align: top; }',
+      '.info-table .section-header { text-align: center; font-weight: bold; font-size: 7pt; background: #e8e8e8; padding: 0.8mm; }',
+      '.info-table .label { font-weight: bold; width: 28mm; white-space: nowrap; }',
+      '.sender-info { line-height: 1.4; font-size: 7pt; }',
+      '.footer { font-size: 6.5pt; text-align: center; margin-top: 1mm; border-top: 0.5px solid #000; padding-top: 0.8mm; }',
+      '</style></head><body>',
+      '<div class="header">',
+      '  <div>',
+      '    <div class="dest-city">' + destCity.toUpperCase() + '</div>',
+      '    <div class="from-city">' + fromCity.toUpperCase() + '</div>',
+      '  </div>',
+      '  <div style="text-align:right">',
+      '    <div class="gonderim-kodu">' + gonderimKodu + '</div>',
+      '    <div class="tracking-no">' + cargo.trackingNo + '</div>',
+      '  </div>',
+      '</div>',
+      '<div class="hat-name">' + hatName + '</div>',
+      '<table class="info-table">',
+      '  <tr>',
+      '    <td colspan="2" class="section-header">G\u00f6nderici Bilgileri</td>',
+      '    <td class="label">Tarih</td>',
+      '    <td>' + today + '</td>',
+      '  </tr>',
+      '  <tr>',
+      '    <td colspan="2" rowspan="2" class="sender-info">' + cargo.sender + '<br>' + senderPhone + '<br>' + (cargo.from || '') + '</td>',
+      '    <td class="label">T\u00fcr\u00fc</td>',
+      '    <td>Paket</td>',
+      '  </tr>',
+      '  <tr>',
+      '    <td class="label">Adet</td>',
+      '    <td>' + cargo.pieces + '</td>',
+      '  </tr>',
+      '  <tr>',
+      '    <td colspan="4" class="section-header">Al\u0131c\u0131 Bilgileri</td>',
+      '  </tr>',
+      '  <tr>',
+      '    <td colspan="4" class="sender-info">' + cargo.receiver + '<br>' + receiverPhone + '<br>' + (cargo.to || '') + '</td>',
+      '  </tr>',
+      '</table>',
+      '<div class="footer">' + footerText + '</div>',
+      '</body></html>'
+    ].join('\n')
+
     const printWindow = window.open("", "_blank", "width=500,height=600")
     if (printWindow) {
-      printWindow.document.write("<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><title>Barkod - " + cargo.trackingNo + "</title>\n<style>\n  @page { margin: 0; size: 100mm 70mm; }\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { font-family: Arial, Helvetica, sans-serif; width: 100mm; height: 70mm; padding: 2.5mm; overflow: hidden; }\n  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5mm; }\n  .dest-city { font-size: 20pt; font-weight: bold; letter-spacing: 0.5px; line-height: 1.1; }\n  .gonderim-kodu { font-size: 9pt; font-weight: bold; text-align: right; }\n  .from-city { font-size: 10pt; margin-bottom: 0.3mm; }\n  .tracking-no { font-size: 13pt; font-weight: bold; text-align: right; letter-spacing: 1px; }\n  .hat-name { font-size: 10pt; font-weight: bold; margin-bottom: 1mm; }\n  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 1mm; font-size: 7pt; }\n  .info-table td, .info-table th { border: 0.5px solid #000; padding: 1mm 1.5mm; vertical-align: top; }\n  .info-table .section-header { text-align: center; font-weight: bold; font-size: 7pt; background: #e8e8e8; padding: 0.8mm; }\n  .info-table .label { font-weight: bold; width: 28mm; white-space: nowrap; }\n  .sender-info { line-height: 1.4; font-size: 7pt; }\n  .footer { font-size: 6.5pt; text-align: center; margin-top: 1mm; border-top: 0.5px solid #000; padding-top: 0.8mm; }\n</style>\n</head>\n<body>\n  <div class=\"header\">\n    <div>\n      <div class=\"dest-city\">" + destCity.toUpperCase() + "</div>\n      <div class=\"from-city\">" + fromCity.toUpperCase() + "</div>\n    </div>\n    <div style=\"text-align:right\">\n      <div class=\"gonderim-kodu\">" + gonderimKodu + "</div>\n      <div class=\"tracking-no\">" + cargo.trackingNo + "</div>\n    </div>\n  </div>\n\n  <div class=\"hat-name\">" + hatName + "</div>\n\n  <table class=\"info-table\">\n    <tr>\n      <td colspan=\"2\" class=\"section-header\">G\u00d6NDER\u0130C\u0130 B\u0130LG\u0130LER\u0130</td>\n      <td class=\"label\">Tarih</td>\n      <td>" + today + "</td>\n    </tr>\n    <tr>\n      <td colspan=\"2\" rowspan=\"3\" class=\"sender-info\">" + cargo.sender + "<br>" + senderPhone + "<br>" + cargo.from + "</td>\n      <td class=\"label\">T\u00fcr\u00fc</td>\n      <td>Paket</td>\n    </tr>\n    <tr>\n      <td class=\"label\">KG/DS</td>\n      <td>-</td>\n    </tr>\n    <tr>\n      <td class=\"label\">Adet</td>\n      <td>" + cargo.pieces + "/1</td>\n    </tr>\n    <tr>\n      <td colspan=\"4\" class=\"section-header\">ALICI B\u0130LG\u0130LER\u0130</td>\n    </tr>\n    <tr>\n      <td colspan=\"4\" class=\"sender-info\">" + cargo.receiver + "<br>" + receiverPhone + "<br>" + cargo.to + "</td>\n    </tr>\n  </table>\n\n  <div class=\"footer\">" + footerText + "</div>\n\n  <script>window.onload = function() { window.print(); }<\/script>\n</body>\n</html>")
+      printWindow.document.write(html)
       printWindow.document.close()
     }
   }, [onToast, kullaniciSube, subeAyarlar])

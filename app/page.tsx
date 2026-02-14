@@ -312,6 +312,9 @@ export default function Page() {
         <Musteriler
           customers={savedCustomers}
           onCustomerSaved={handleCustomerSavedFromPage}
+          onCustomerUpdated={(tc, updated) => {
+            setSavedCustomers((prev) => prev.map((c) => c.tc === tc ? updated : c))
+          }}
           onToast={(msg) => showToast(msg)}
         />
       )}
