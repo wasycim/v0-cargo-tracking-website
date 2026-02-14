@@ -13,12 +13,18 @@ import {
 } from "@/components/ui/table"
 import { useState, useEffect, useCallback } from "react"
 
+interface SubeAyarlar {
+  peron_no?: string
+  sirket_telefon?: string
+}
+
 interface CargoTableProps {
   cargos: Cargo[]
   onLoadCargo?: (cargoId: string, trackingNo: string) => void
   onEditCargo?: (cargo: Cargo) => void
   onToast?: (message: string) => void
   kullaniciSube?: string
+  subeAyarlar?: SubeAyarlar | null
 }
 
 function StatusBadge({ status }: { status: Cargo["status"] }) {
