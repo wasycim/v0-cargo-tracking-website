@@ -20,15 +20,15 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
     setMessage("")
 
     if (!tcNo || !gsm || !gsmSon4) {
-      setError("Lutfen tum alanlari doldurun")
+      setError("Lütfen tüm alanları doldurun")
       return
     }
     if (tcNo.length !== 11) {
-      setError("TC Kimlik No 11 haneli olmalidir")
+      setError("TC Kimlik No 11 haneli olmalıdır")
       return
     }
     if (gsm.length !== 10) {
-      setError("GSM numarasi 10 haneli olmalidir")
+      setError("GSM numarası 10 haneli olmalıdır")
       return
     }
     if (gsmSon4.length !== 4) {
@@ -38,11 +38,11 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
 
     const actualLast4 = gsm.slice(-4)
     if (gsmSon4 !== actualLast4) {
-      setError("GSM numarasinin son 4 hanesi uyusmuyor")
+      setError("GSM numarasının son 4 hanesi uyuşmuyor")
       return
     }
 
-    setMessage("Sifre sifirlama bilgileri SMS olarak gonderildi.")
+    setMessage("Şifre sıfırlama bilgileri SMS olarak gönderildi.")
   }
 
   return (
@@ -50,7 +50,7 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
       <div className="w-full max-w-sm">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
           <div className="px-6 py-5">
-            <h1 className="text-center text-lg font-bold text-foreground">Sifre Sifirlama</h1>
+            <h1 className="text-center text-lg font-bold text-foreground">Şifre Sıfırlama</h1>
           </div>
 
           <div className="px-6 pb-6">
@@ -96,7 +96,7 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="GSM Numarasi Son 4 Rakam"
+                  placeholder="GSM Numarası Son 4 Rakam"
                   value={gsmSon4}
                   onChange={(e) => setGsmSon4(e.target.value.replace(/\D/g, "").slice(0, 4))}
                   className="border-border bg-background pl-10"
@@ -109,16 +109,16 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
               onClick={handleReset}
               className="w-full rounded-lg bg-cargo-green py-3 text-sm font-bold text-white transition-all hover:bg-cargo-dark active:scale-[0.98]"
             >
-              Sifre Sifirla
+              Şifre Sıfırla
             </button>
 
             <div className="mt-4 text-center">
               <button
                 onClick={onBack}
-                className="flex items-center justify-center gap-1.5 mx-auto text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="mx-auto flex items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Giris Sayfasina Geri Don
+                Giriş Sayfasına Geri Dön
               </button>
             </div>
           </div>

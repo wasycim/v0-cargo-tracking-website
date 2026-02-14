@@ -59,9 +59,9 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
       {/* Status Row */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Yuklenecek", count: yuklenecekCount, border: "border-cargo-green", badge: "bg-cargo-green" },
+          { label: "Yüklenecek", count: yuklenecekCount, border: "border-cargo-green", badge: "bg-cargo-green" },
           { label: "Giden", count: gidenCount, border: "border-cargo-dark", badge: "bg-cargo-dark" },
-          { label: "Iptal", count: iptalCount, border: "border-red-500", badge: "bg-red-500" },
+          { label: "İptal", count: iptalCount, border: "border-red-500", badge: "bg-red-500" },
         ].map((item) => (
           <div key={item.label} className={`flex items-center justify-between rounded-lg border-2 bg-card px-4 py-3 ${item.border}`}>
             <span className="text-sm font-medium text-foreground">{item.label}</span>
@@ -71,7 +71,7 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
           </div>
         ))}
         <div className="flex items-center justify-between rounded-lg border-2 border-border bg-card px-4 py-3">
-          <span className="text-sm font-medium text-foreground">Anlik Kasa Tutari</span>
+          <span className="text-sm font-medium text-foreground">Anlık Kasa Tutarı</span>
           <span className="rounded-md bg-amber-100 px-3 py-1 text-sm font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
             {kasaTutari.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
           </span>
@@ -81,7 +81,7 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
       {/* Tutar Chart (top - area) */}
       <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Tutar Grafigi (TL)</h3>
+          <h3 className="text-sm font-semibold text-foreground">Tutar Grafiği (TL)</h3>
         </div>
         <div className="p-4">
           <ResponsiveContainer width="100%" height={300}>
@@ -117,7 +117,7 @@ export function AnaSayfa({ cargos, kasaTutari }: AnaSayfaProps) {
       {/* Adet Chart (bottom - line) */}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Adet Grafigi</h3>
+          <h3 className="text-sm font-semibold text-foreground">Adet Grafiği</h3>
         </div>
         <div className="p-4">
           <ResponsiveContainer width="100%" height={200}>

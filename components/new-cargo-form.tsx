@@ -18,11 +18,12 @@ interface NewCargoFormProps {
   onSubmit: (cargo: Cargo) => void
   onCustomerSaved?: (customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => void
   savedCustomers?: Array<{ tc: string; ad: string; soyad: string; telefon: string; email?: string }>
+  kullaniciSube?: string
 }
 
 type PackageType = "dosya" | "paket" | "koli" | "cuval"
 
-export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomers = [] }: NewCargoFormProps) {
+export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomers = [], kullaniciSube }: NewCargoFormProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [packageType, setPackageType] = useState<PackageType>("dosya")
@@ -177,8 +178,18 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       return
     }
     if (!receiverSube) {
-      alert("Alici sube / il / ilce secimi yapin")
+      alert("Alıcı şube / il / ilçe seçimi yapın")
       return
+    }
+
+    // Aynı şubeye kargo gönderme kontrolü
+    if (kullaniciSube) {
+      const selectedLocation = receiverSube.toLowerCase()
+      const userBranch = kullaniciSube.toLowerCase()
+      if (selectedLocation.includes(userBranch) || userBranch.includes(selectedLocation.split("/").pop()?.trim() || "")) {
+        alert(`${kullaniciSube} şubesinden ${kullaniciSube} şubesine kargo gönderilemez!`)
+        return
+      }
     }
 
     const now = new Date()
@@ -191,9 +202,11 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       trackingNo: `203 ${String(Math.floor(Math.random() * 999)).padStart(3, "0")} ${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`,
       pieces: Number(adet) || 1,
       sender: `${senderAd} ${senderSoyad}`.trim(),
+      senderTelefon: senderTelefon,
       receiver: `${receiverAd} ${receiverSoyad}`.trim(),
-      from: "Izmit (Kocaeli) / Gebze",
-      fromCity: "Gebze",
+      receiverTelefon: receiverTelefon,
+      from: kullaniciSube ? `Kocaeli / ${kullaniciSube}` : "İzmit (Kocaeli) / Gebze",
+      fromCity: kullaniciSube || "Gebze",
       to: receiverSube || "Belirtilmedi",
       toCity: receiverSube ? receiverSube.split("/").pop()?.trim() || "" : "",
       amount: toplamTutar,
@@ -227,7 +240,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
-          <h2 className="text-lg font-semibold text-foreground">Yeni Kargo - Gebze</h2>
+          <h2 className="text-lg font-semibold text-foreground">Yeni Kargo - {kullaniciSube || "Gebze"}</h2>
           <button onClick={handleClose} className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Kapat">
             <X className="h-5 w-5" />
           </button>
@@ -240,18 +253,18 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
             {/* Gonderici Bilgileri */}
             <div className="overflow-hidden rounded-lg border border-cargo-green">
               <div className="bg-cargo-green px-4 py-2.5">
-                <h3 className="text-center text-sm font-semibold text-white">Gonderici Bilgileri</h3>
+                <h3 className="text-center text-sm font-semibold text-white">Gönderici Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-4">
                   <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                    {"Musteri Tipi"} <span className="text-destructive">*</span>
+                    {"Müşteri Tipi"} <span className="text-destructive">*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">Gercek Kisi</span>
+                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">Gerçek Kişi</span>
                     <button onClick={handleSaveCustomer} className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-cargo-green hover:bg-cargo-green/5">
                       <UserPlus className="h-3.5 w-3.5" />
-                      Musteri Ekle
+                      Müşteri Ekle
                     </button>
                     <button onClick={handleClearSender} className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-destructive hover:bg-destructive/5">
                       <Eraser className="h-3.5 w-3.5" />
@@ -293,7 +306,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                     />
                     <button onClick={handleSendCode} className="flex items-center gap-2 whitespace-nowrap rounded-md bg-cargo-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-green">
                       <Send className="h-3.5 w-3.5" />
-                      Kod Gonder
+                      Kod Gönder
                     </button>
                   </div>
                   {phoneError && (
@@ -305,7 +318,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Dogrulama Kodu"
+                    placeholder="Doğrulama Kodu"
                     value={dogrulamaKodu}
                     onChange={(e) => {
                       setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 4))
@@ -332,7 +345,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                 </div>
                 {isCodeVerified && (
                   <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                    <Check className="h-3 w-3" />Kod basariyla dogrulandi
+                    <Check className="h-3 w-3" />Kod başarıyla doğrulandı
                   </p>
                 )}
                 {codeError && (
@@ -346,15 +359,15 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
             {/* Alici Bilgileri */}
             <div className="overflow-hidden rounded-lg border border-cargo-teal">
               <div className="bg-cargo-teal px-4 py-2.5">
-                <h3 className="text-center text-sm font-semibold text-white">Alici Bilgileri</h3>
+                <h3 className="text-center text-sm font-semibold text-white">Alıcı Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-4">
                   <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                    {"Musteri Tipi"} <span className="text-destructive">*</span>
+                    {"Müşteri Tipi"} <span className="text-destructive">*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">Gercek Kisi</span>
+                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">Gerçek Kişi</span>
                     <button onClick={handleClearReceiver} className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-destructive hover:bg-destructive/5">
                       <Eraser className="h-3.5 w-3.5" />
                       Temizle
@@ -372,8 +385,8 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Alici Sube / Il / Ilce</label>
-                  <CityPicker value={receiverSube} onChange={setReceiverSube} placeholder="Il veya ilce secin..." />
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Alıcı Şube / İl / İlçe</label>
+                  <CityPicker value={receiverSube} onChange={setReceiverSube} placeholder="İl veya ilçe seçin..." />
                 </div>
               </div>
             </div>
@@ -384,25 +397,25 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
             {/* Gonderi Bilgileri */}
             <div className="overflow-hidden rounded-lg border border-cargo-green">
               <div className="bg-cargo-green px-4 py-2.5">
-                <h3 className="text-center text-sm font-semibold text-white">Gonderi Bilgileri</h3>
+                <h3 className="text-center text-sm font-semibold text-white">Gönderi Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-3">
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Gonderim Tipi</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Gönderim Tipi</label>
                   <Select value={gonderimTipi} onValueChange={setGonderimTipi}>
                     <SelectTrigger className="border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ah">Alici Haberli</SelectItem>
-                      <SelectItem value="gh">Gonderici Haberli</SelectItem>
-                      <SelectItem value="agh">Alici ve Gonderici Haberli</SelectItem>
+                      <SelectItem value="ah">Alıcı Haberli</SelectItem>
+                      <SelectItem value="gh">Gönderici Haberli</SelectItem>
+                      <SelectItem value="agh">Alıcı ve Gönderici Haberli</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Icerik</label>
-                  <Input placeholder="Kargo icerigi" value={icerik} onChange={(e) => setIcerik(e.target.value)} className="border-border bg-background" />
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">İçerik</label>
+                  <Input placeholder="Kargo içeriği" value={icerik} onChange={(e) => setIcerik(e.target.value)} className="border-border bg-background" />
                 </div>
               </div>
             </div>
@@ -410,7 +423,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
             {/* Gonderi Ozellikleri */}
             <div className="overflow-hidden rounded-lg border border-cargo-teal">
               <div className="bg-cargo-teal px-4 py-2.5">
-                <h3 className="text-center text-sm font-semibold text-white">Gonderi Ozellikleri</h3>
+                <h3 className="text-center text-sm font-semibold text-white">Gönderi Özellikleri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-3">
@@ -462,20 +475,20 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
               </div>
               <div className="p-4">
                 <div className="mb-3">
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Odeme Tipi</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Ödeme Tipi</label>
                   <Select value={odemeTipi} onValueChange={setOdemeTipi}>
                     <SelectTrigger className="border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pesin">Pesin Odeme</SelectItem>
-                      <SelectItem value="kart">Kartla Odeme</SelectItem>
+                      <SelectItem value="pesin">Peşin Ödeme</SelectItem>
+                      <SelectItem value="kart">Kartla Ödeme</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="mb-3">
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Indirim (%)</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">İndirim (%)</label>
                   <div className="relative">
                     <Input
                       type="number"
@@ -509,7 +522,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <button onClick={handleClose} className="flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted">
             <X className="h-4 w-4" />
-            Iptal
+            İptal
           </button>
           <button onClick={handleSubmitCargo} className="rounded-lg bg-cargo-green px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-cargo-dark hover:shadow-md active:scale-95">
             Kargo Ekle

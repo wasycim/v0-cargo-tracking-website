@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { Package, Ban } from "lucide-react"
 import { LoginPage } from "@/components/login-page"
+import type { KullaniciInfo } from "@/components/login-page"
 import { ForgotPasswordPage } from "@/components/forgot-password-page"
 import { Navigation } from "@/components/navigation"
 import type { AppPage } from "@/components/navigation"
@@ -20,13 +21,13 @@ import { KasaIslemleri } from "@/components/kasa-islemleri"
 import { Raporlar } from "@/components/raporlar"
 import { Ayarlar } from "@/components/ayarlar"
 import { ToastNotification } from "@/components/toast-notification"
-import { mockCargos } from "@/lib/cargo-data"
 import type { Cargo } from "@/lib/cargo-data"
 
 export default function Page() {
   // Auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [kullanici, setKullanici] = useState<KullaniciInfo | null>(null)
 
   // App page
   const [activePage, setActivePage] = useState<AppPage>("kargolar")
@@ -42,12 +43,24 @@ export default function Page() {
   const [showCancelForm, setShowCancelForm] = useState(false)
   const [loadingCargo, setLoadingCargo] = useState<{ id: string; trackingNo: string } | null>(null)
   const [editingCargo, setEditingCargo] = useState<Cargo | null>(null)
-  const [cargos, setCargos] = useState<Cargo[]>(mockCargos)
+  const [cargos, setCargos] = useState<Cargo[]>([])
   const [filters, setFilters] = useState({
     giden: true,
     eskiAktif: false,
     iptal: false,
   })
+
+  // Check for remembered user on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kargo_user")
+      if (saved) {
+        const user = JSON.parse(saved) as KullaniciInfo
+        setKullanici(user)
+        setIsLoggedIn(true)
+      }
+    } catch { /* ignore */ }
+  }, [])
 
   // Auto-hide cargos at 03:00
   useEffect(() => {
@@ -75,6 +88,18 @@ export default function Page() {
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     setToast({ message, type })
+  }, [])
+
+  const handleLogin = useCallback((user: KullaniciInfo) => {
+    setKullanici(user)
+    setIsLoggedIn(true)
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    setIsLoggedIn(false)
+    setKullanici(null)
+    localStorage.removeItem("kargo_user")
+    setCargos([])
   }, [])
 
   const filteredCargos = useMemo(() => {
@@ -106,7 +131,7 @@ export default function Page() {
 
   const handleNewCargoSubmit = useCallback((newCargo: Cargo) => {
     setCargos((prev) => [newCargo, ...prev])
-    showToast("Kargo basariyla eklendi")
+    showToast("Kargo başarıyla eklendi")
   }, [showToast])
 
   const handleCustomerSavedFromForm = useCallback((customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => {
@@ -116,7 +141,7 @@ export default function Page() {
       if (exists) return prev.map((c) => (c.tc === customer.tc ? full : c))
       return [...prev, full]
     })
-    showToast("Musteri eklendi")
+    showToast("Müşteri eklendi")
   }, [showToast])
 
   const handleCustomerSavedFromPage = useCallback((customer: SavedCustomer) => {
@@ -153,7 +178,7 @@ export default function Page() {
         )
       )
       setLoadingCargo(null)
-      showToast("Kargo yuklendi")
+      showToast("Kargo yüklendi")
     },
     [showToast]
   )
@@ -162,7 +187,7 @@ export default function Page() {
     (cargoId: string, data: Partial<Cargo>) => {
       setCargos((prev) => prev.map((c) => (c.id === cargoId ? { ...c, ...data } : c)))
       setEditingCargo(null)
-      showToast("Kargo bilgileri guncellendi")
+      showToast("Kargo bilgileri güncellendi")
     },
     [showToast]
   )
@@ -187,7 +212,7 @@ export default function Page() {
     }
     return (
       <>
-        <LoginPage onLogin={() => setIsLoggedIn(true)} onForgotPassword={() => setShowForgotPassword(true)} />
+        <LoginPage onLogin={handleLogin} onForgotPassword={() => setShowForgotPassword(true)} />
         {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       </>
     )
@@ -195,7 +220,14 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Navigation activePage={activePage} onPageChange={setActivePage} />
+      <Navigation
+        activePage={activePage}
+        onPageChange={setActivePage}
+        kullaniciAd={kullanici?.ad}
+        kullaniciSoyad={kullanici?.soyad}
+        kullaniciSube={kullanici?.sube}
+        onLogout={handleLogout}
+      />
 
       {/* Ana Sayfa */}
       {activePage === "anasayfa" && <AnaSayfa cargos={cargos} kasaTutari={kasaTutari} />}
@@ -216,7 +248,7 @@ export default function Page() {
               className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-card px-5 py-2.5 text-sm font-medium text-destructive transition-all hover:bg-destructive hover:text-white active:scale-95"
             >
               <Ban className="h-4 w-4" />
-              Kargo Iptal
+              Kargo İptal
             </button>
           </div>
 
@@ -227,11 +259,12 @@ export default function Page() {
             onLoadCargo={handleLoadCargo}
             onEditCargo={setEditingCargo}
             onToast={(msg) => showToast(msg)}
+            kullaniciSube={kullanici?.sube}
           />
         </>
       )}
 
-      {/* Musteriler */}
+      {/* Müşteriler */}
       {activePage === "musteriler" && (
         <Musteriler
           customers={savedCustomers}
@@ -240,7 +273,7 @@ export default function Page() {
         />
       )}
 
-      {/* Kasa Islemleri */}
+      {/* Kasa İşlemleri */}
       {activePage === "kasaislemleri" && <KasaIslemleri cargos={cargos} />}
 
       {/* Raporlar */}
@@ -256,6 +289,7 @@ export default function Page() {
           onSubmit={handleNewCargoSubmit}
           onCustomerSaved={handleCustomerSavedFromForm}
           savedCustomers={savedCustomers}
+          kullaniciSube={kullanici?.sube}
         />
       )}
 

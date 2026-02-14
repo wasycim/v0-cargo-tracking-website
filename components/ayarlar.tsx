@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Printer, Save, TestTube, Usb, Wifi, Check } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Printer, Save, TestTube, Usb, Wifi, Check, ScanLine, RefreshCw } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -15,94 +15,212 @@ interface AyarlarProps {
   onToast?: (message: string) => void
 }
 
+interface DetectedPort {
+  name: string
+  vendorId?: string
+  productId?: string
+}
+
 export function Ayarlar({ onToast }: AyarlarProps) {
-  const [printerModel, setPrinterModel] = useState("zebra-gk420d")
+  const [printerModel, setPrinterModel] = useState("zebra-gc420t")
   const [printerPort, setPrinterPort] = useState("USB001")
   const [printerIp, setPrinterIp] = useState("")
   const [connectionType, setConnectionType] = useState("usb")
-  const [barcodeWidth, setBarcodeWidth] = useState("60")
-  const [barcodeHeight, setBarcodeHeight] = useState("40")
+  const [barcodeWidth, setBarcodeWidth] = useState("100")
+  const [barcodeHeight, setBarcodeHeight] = useState("70")
   const [printSpeed, setPrintSpeed] = useState("orta")
   const [printDensity, setPrintDensity] = useState("orta")
   const [autoPrint, setAutoPrint] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [detectedPorts, setDetectedPorts] = useState<DetectedPort[]>([])
+  const [scanning, setScanning] = useState(false)
+
+  // Try to detect USB ports via Web Serial API
+  const handleScanPorts = async () => {
+    setScanning(true)
+    try {
+      if ("serial" in navigator) {
+        // @ts-expect-error Web Serial API
+        const ports = await navigator.serial.getPorts()
+        const portList: DetectedPort[] = ports.map((p: { getInfo: () => { usbVendorId?: number; usbProductId?: number } }, i: number) => {
+          const info = p.getInfo()
+          return {
+            name: `COM${i + 1}`,
+            vendorId: info.usbVendorId?.toString(16),
+            productId: info.usbProductId?.toString(16),
+          }
+        })
+
+        if (portList.length === 0) {
+          // Request a new port
+          try {
+            // @ts-expect-error Web Serial API
+            const port = await navigator.serial.requestPort()
+            const info = port.getInfo()
+            portList.push({
+              name: "COM1",
+              vendorId: info.usbVendorId?.toString(16),
+              productId: info.usbProductId?.toString(16),
+            })
+          } catch {
+            // User cancelled
+          }
+        }
+
+        setDetectedPorts(portList)
+        if (portList.length > 0) {
+          onToast?.(`${portList.length} port bulundu`)
+        } else {
+          onToast?.("Bağlı port bulunamadı")
+        }
+      } else {
+        // Fallback: show default ports
+        setDetectedPorts([
+          { name: "USB001" },
+          { name: "USB002" },
+          { name: "COM1" },
+          { name: "COM2" },
+          { name: "LPT1" },
+        ])
+        onToast?.("Tarayıcı port erişimini desteklemiyor, varsayılan portlar listelendi")
+      }
+    } catch {
+      onToast?.("Port tarama başarısız oldu")
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  // Load saved settings from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kargo_printer_settings")
+      if (saved) {
+        const s = JSON.parse(saved)
+        if (s.printerModel) setPrinterModel(s.printerModel)
+        if (s.printerPort) setPrinterPort(s.printerPort)
+        if (s.printerIp) setPrinterIp(s.printerIp)
+        if (s.connectionType) setConnectionType(s.connectionType)
+        if (s.barcodeWidth) setBarcodeWidth(s.barcodeWidth)
+        if (s.barcodeHeight) setBarcodeHeight(s.barcodeHeight)
+        if (s.printSpeed) setPrintSpeed(s.printSpeed)
+        if (s.printDensity) setPrintDensity(s.printDensity)
+        if (s.autoPrint !== undefined) setAutoPrint(s.autoPrint)
+      }
+    } catch { /* ignore */ }
+  }, [])
 
   const handleSave = () => {
+    const settings = {
+      printerModel, printerPort, printerIp, connectionType,
+      barcodeWidth, barcodeHeight, printSpeed, printDensity, autoPrint,
+    }
+    localStorage.setItem("kargo_printer_settings", JSON.stringify(settings))
     setSaved(true)
     onToast?.("Ayarlar kaydedildi")
     setTimeout(() => setSaved(false), 2000)
   }
 
   const handleTestPrint = () => {
-    onToast?.("Test barkodu yazdiriliyor")
-    const printWindow = window.open("", "_blank", "width=400,height=250")
+    onToast?.("Test barkodu yazdırılıyor")
+    const printWindow = window.open("", "_blank", "width=500,height=400")
     if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>Test Barkod</title>
-            <style>
-              body { font-family: monospace; text-align: center; padding: 20px; }
-              .title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-              .barcode { font-size: 36px; letter-spacing: 3px; font-weight: bold; margin: 15px 0; }
-              .lines { display: flex; justify-content: center; gap: 2px; margin: 10px 0; }
-              .lines span { display: block; background: #000; height: 50px; }
-              .info { font-size: 12px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <div class="title">TEST BARKOD</div>
-            <div class="barcode">000 000 000</div>
-            <div class="lines">
-              ${Array.from({ length: 30 }).map((_, i) => `<span style="width:${(i % 3) + 1}px"></span><span style="width:1px;background:#fff"></span>`).join("")}
-            </div>
-            <div class="info">Yazici: ${printerModel}</div>
-            <div class="info">Baglanti: ${connectionType === "usb" ? `USB - ${printerPort}` : `Ag - ${printerIp}`}</div>
-            <div class="info">Boyut: ${barcodeWidth}mm x ${barcodeHeight}mm</div>
-            <script>window.onload = function() { window.print(); }</script>
-          </body>
-        </html>
-      `)
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head><title>Test Barkod</title>
+<style>
+  @page { margin: 2mm; size: ${barcodeWidth}mm ${barcodeHeight}mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; width: ${barcodeWidth}mm; padding: 3mm; }
+  .header { display: flex; justify-content: space-between; margin-bottom: 2mm; }
+  .dest-city { font-size: 22pt; font-weight: bold; }
+  .from-city { font-size: 11pt; }
+  .tracking { font-size: 14pt; font-weight: bold; text-align: right; }
+  .hat { font-size: 11pt; font-weight: bold; margin-bottom: 2mm; }
+  .info-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .info-table td { border: 0.5px solid #000; padding: 1.5mm 2mm; }
+  .info-table .section-header { text-align: center; font-weight: bold; background: #f0f0f0; }
+  .footer { font-size: 7pt; text-align: center; margin-top: 2mm; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="dest-city">TEST ŞEHİR</div>
+      <div class="from-city">GEBZE</div>
+    </div>
+    <div>
+      <div style="font-size:10pt;font-weight:bold;text-align:right">AH PÖ</div>
+      <div class="tracking">000 000 000</div>
+    </div>
+  </div>
+  <div class="hat">TEST HATTI</div>
+  <table class="info-table">
+    <tr><td colspan="2" class="section-header">GÖNDERİCİ BİLGİLERİ</td><td style="font-weight:bold">Tarih</td><td>${new Date().toLocaleDateString("tr-TR")}</td></tr>
+    <tr><td colspan="2" rowspan="3">Test Gönderici<br>(***) *** 00 00<br>Kocaeli / Gebze</td><td style="font-weight:bold">Türü</td><td>Paket</td></tr>
+    <tr><td style="font-weight:bold">KG/DS</td><td>-</td></tr>
+    <tr><td style="font-weight:bold">Adet</td><td>1/1</td></tr>
+    <tr><td colspan="4" class="section-header">ALICI BİLGİLERİ</td></tr>
+    <tr><td colspan="4">Test Alıcı<br>(***) *** 00 00<br>Test İl / Test İlçe</td></tr>
+  </table>
+  <div class="footer">Kayıp Halinde İletişim İçin Lütfen Arayınız: 0850 333 35 35</div>
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`)
       printWindow.document.close()
     }
   }
+
+  const printerModels = [
+    { value: "zebra-gc420t", label: "Zebra GC420t" },
+    { value: "zebra-gk420d", label: "Zebra GK420d" },
+    { value: "zebra-zd220", label: "Zebra ZD220" },
+    { value: "zebra-zd421", label: "Zebra ZD421" },
+    { value: "zebra-zt230", label: "Zebra ZT230" },
+    { value: "tsc-te200", label: "TSC TE200" },
+    { value: "tsc-te210", label: "TSC TE210" },
+    { value: "tsc-ta210", label: "TSC TA210" },
+    { value: "honeywell-pc42t", label: "Honeywell PC42t" },
+    { value: "honeywell-pc43t", label: "Honeywell PC43t" },
+    { value: "brother-ql820", label: "Brother QL-820NWB" },
+    { value: "dymo-450", label: "Dymo LabelWriter 450" },
+    { value: "diger", label: "Diğer" },
+  ]
+
+  const defaultPorts = [
+    { name: "USB001" }, { name: "USB002" }, { name: "USB003" },
+    { name: "COM1" }, { name: "COM2" }, { name: "COM3" }, { name: "LPT1" },
+  ]
+  const portList = detectedPorts.length > 0 ? detectedPorts : defaultPorts
 
   return (
     <div className="mx-auto max-w-3xl p-6">
       <h1 className="mb-6 text-2xl font-bold text-foreground">Ayarlar</h1>
 
-      {/* Yazici Ayarlari */}
+      {/* Yazıcı Ayarları */}
       <div className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center gap-3 border-b border-border bg-cargo-green px-5 py-3">
           <Printer className="h-5 w-5 text-white" />
-          <h2 className="text-sm font-semibold text-white">Yazici Ayarlari</h2>
+          <h2 className="text-sm font-semibold text-white">Yazıcı Ayarları</h2>
         </div>
         <div className="p-5">
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Yazici Modeli</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Yazıcı Modeli</label>
             <Select value={printerModel} onValueChange={setPrinterModel}>
               <SelectTrigger className="border-border bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="zebra-gk420d">Zebra GK420d</SelectItem>
-                <SelectItem value="zebra-zd220">Zebra ZD220</SelectItem>
-                <SelectItem value="zebra-zd421">Zebra ZD421</SelectItem>
-                <SelectItem value="zebra-zt230">Zebra ZT230</SelectItem>
-                <SelectItem value="tsc-te200">TSC TE200</SelectItem>
-                <SelectItem value="tsc-te210">TSC TE210</SelectItem>
-                <SelectItem value="tsc-ta210">TSC TA210</SelectItem>
-                <SelectItem value="honeywell-pc42t">Honeywell PC42t</SelectItem>
-                <SelectItem value="honeywell-pc43t">Honeywell PC43t</SelectItem>
-                <SelectItem value="brother-ql820">Brother QL-820NWB</SelectItem>
-                <SelectItem value="dymo-450">Dymo LabelWriter 450</SelectItem>
-                <SelectItem value="diger">Diger</SelectItem>
+                {printerModels.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Connection Type */}
+          {/* Bağlantı Tipi */}
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Baglanti Tipi</label>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Bağlantı Tipi</label>
             <div className="flex gap-2">
               <button
                 onClick={() => setConnectionType("usb")}
@@ -124,32 +242,46 @@ export function Ayarlar({ onToast }: AyarlarProps) {
                 }`}
               >
                 <Wifi className="h-4 w-4" />
-                Ag (IP)
+                Ağ (IP)
               </button>
             </div>
           </div>
 
           {connectionType === "usb" ? (
             <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">USB Port</label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">USB Port</label>
+                <button
+                  onClick={handleScanPorts}
+                  disabled={scanning}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-cargo-green transition-colors hover:bg-cargo-green/10 disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${scanning ? "animate-spin" : ""}`} />
+                  {scanning ? "Taranıyor..." : "Portları Tara"}
+                </button>
+              </div>
               <Select value={printerPort} onValueChange={setPrinterPort}>
                 <SelectTrigger className="border-border bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USB001">USB001</SelectItem>
-                  <SelectItem value="USB002">USB002</SelectItem>
-                  <SelectItem value="USB003">USB003</SelectItem>
-                  <SelectItem value="COM1">COM1</SelectItem>
-                  <SelectItem value="COM2">COM2</SelectItem>
-                  <SelectItem value="COM3">COM3</SelectItem>
-                  <SelectItem value="LPT1">LPT1</SelectItem>
+                  {portList.map((p) => (
+                    <SelectItem key={p.name} value={p.name}>
+                      {p.name}
+                      {p.vendorId && ` (VID:${p.vendorId} PID:${p.productId})`}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {detectedPorts.length > 0 && (
+                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  {detectedPorts.length} port tespit edildi
+                </p>
+              )}
             </div>
           ) : (
             <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Yazici IP Adresi</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Yazıcı IP Adresi</label>
               <Input
                 placeholder="192.168.1.100"
                 value={printerIp}
@@ -161,48 +293,48 @@ export function Ayarlar({ onToast }: AyarlarProps) {
         </div>
       </div>
 
-      {/* Barkod Ayarlari */}
+      {/* Barkod Ayarları */}
       <div className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center gap-3 border-b border-border bg-cargo-teal px-5 py-3">
-          <Printer className="h-5 w-5 text-white" />
-          <h2 className="text-sm font-semibold text-white">Barkod Ayarlari</h2>
+          <ScanLine className="h-5 w-5 text-white" />
+          <h2 className="text-sm font-semibold text-white">Barkod Ayarları</h2>
         </div>
         <div className="p-5">
           <div className="mb-4 flex gap-4">
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Barkod Genisligi (mm)</label>
-              <Input type="number" min={20} max={120} value={barcodeWidth} onChange={(e) => setBarcodeWidth(e.target.value)} className="border-border bg-background" />
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Barkod Genişliği (mm)</label>
+              <Input type="number" min={20} max={150} value={barcodeWidth} onChange={(e) => setBarcodeWidth(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Barkod Yuksekligi (mm)</label>
-              <Input type="number" min={15} max={80} value={barcodeHeight} onChange={(e) => setBarcodeHeight(e.target.value)} className="border-border bg-background" />
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Barkod Yüksekliği (mm)</label>
+              <Input type="number" min={15} max={100} value={barcodeHeight} onChange={(e) => setBarcodeHeight(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
 
           <div className="mb-4 flex gap-4">
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Baski Hizi</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Baskı Hızı</label>
               <Select value={printSpeed} onValueChange={setPrintSpeed}>
                 <SelectTrigger className="border-border bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="yavas">Yavas</SelectItem>
+                  <SelectItem value="yavas">Yavaş</SelectItem>
                   <SelectItem value="orta">Orta</SelectItem>
-                  <SelectItem value="hizli">Hizli</SelectItem>
+                  <SelectItem value="hizli">Hızlı</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex-1">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Baski Yogunlugu</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Baskı Yoğunluğu</label>
               <Select value={printDensity} onValueChange={setPrintDensity}>
                 <SelectTrigger className="border-border bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dusuk">Dusuk</SelectItem>
+                  <SelectItem value="dusuk">Düşük</SelectItem>
                   <SelectItem value="orta">Orta</SelectItem>
-                  <SelectItem value="yuksek">Yuksek</SelectItem>
+                  <SelectItem value="yuksek">Yüksek</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -219,19 +351,19 @@ export function Ayarlar({ onToast }: AyarlarProps) {
             >
               {autoPrint && <Check className="h-3 w-3" />}
             </button>
-            <span className="text-sm text-foreground">Kargo eklendikten sonra otomatik barkod yazdir</span>
+            <span className="text-sm text-foreground">Kargo eklendikten sonra otomatik barkod yazdır</span>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
+      {/* İşlemler */}
       <div className="flex items-center justify-between">
         <button
           onClick={handleTestPrint}
           className="flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground transition-all hover:bg-muted active:scale-95"
         >
           <TestTube className="h-4 w-4" />
-          Test Barkod Yazdir
+          Test Barkod Yazdır
         </button>
         <button
           onClick={handleSave}

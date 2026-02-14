@@ -18,6 +18,7 @@ interface CargoTableProps {
   onLoadCargo?: (cargoId: string, trackingNo: string) => void
   onEditCargo?: (cargo: Cargo) => void
   onToast?: (message: string) => void
+  kullaniciSube?: string
 }
 
 function StatusBadge({ status }: { status: Cargo["status"] }) {
@@ -30,7 +31,15 @@ function StatusBadge({ status }: { status: Cargo["status"] }) {
   )
 }
 
-export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoTableProps) {
+function maskPhone(phone: string): string {
+  const cleaned = phone.replace(/\D/g, "")
+  if (cleaned.length >= 10) {
+    return `(***) *** ${cleaned.slice(-4).slice(0, 2)} ${cleaned.slice(-2)}`
+  }
+  return phone
+}
+
+export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullaniciSube }: CargoTableProps) {
   const [countdown, setCountdown] = useState(120)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -45,7 +54,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
     try {
       await navigator.clipboard.writeText(trackingNo.replace(/\s/g, ""))
       setCopiedId(cargoId)
-      onToast?.(`Takip No kopyalandi: ${trackingNo}`)
+      onToast?.(`Takip No kopyalandı: ${trackingNo}`)
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
       const el = document.createElement("textarea")
@@ -55,48 +64,104 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
       document.execCommand("copy")
       document.body.removeChild(el)
       setCopiedId(cargoId)
-      onToast?.(`Takip No kopyalandi: ${trackingNo}`)
+      onToast?.(`Takip No kopyalandı: ${trackingNo}`)
       setTimeout(() => setCopiedId(null), 2000)
     }
   }, [onToast])
 
   const handlePrintBarcode = useCallback((cargo: Cargo) => {
-    onToast?.("Barkod yazdiriliyor")
+    onToast?.("Barkod yazdırılıyor")
 
-    // Create a printable barcode window
-    const printWindow = window.open("", "_blank", "width=400,height=300")
+    // Extract destination city name (big title)
+    const destCity = cargo.toCity || cargo.to.split("/").pop()?.trim() || "---"
+    const fromCity = kullaniciSube || cargo.fromCity || "Gebze"
+    const hatName = `${destCity.toUpperCase()} HATTI`
+    const today = new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
+    // gonderim tipi: AH PÖ etc
+    const gonderimKodu = "AH PÖ"
+
+    const senderPhone = cargo.senderTelefon ? maskPhone(cargo.senderTelefon) : "(***) *** ** **"
+    const receiverPhone = cargo.receiverTelefon ? maskPhone(cargo.receiverTelefon) : "(***) *** ** **"
+
+    const printWindow = window.open("", "_blank", "width=500,height=600")
     if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head><title>Barkod - ${cargo.trackingNo}</title>
-            <style>
-              body { font-family: monospace; text-align: center; padding: 20px; }
-              .barcode { font-size: 48px; letter-spacing: 4px; font-weight: bold; margin: 20px 0; }
-              .info { font-size: 14px; margin: 4px 0; }
-              .tracking { font-size: 20px; font-weight: bold; margin: 10px 0; }
-              .lines { display: flex; justify-content: center; gap: 2px; margin: 15px 0; }
-              .lines span { display: block; background: #000; height: 60px; }
-            </style>
-          </head>
-          <body>
-            <div class="tracking">${cargo.trackingNo}</div>
-            <div class="lines">
-              ${cargo.trackingNo.replace(/\s/g, "").split("").map((d) => {
-                const w = (parseInt(d) || 1) + 1
-                return `<span style="width:${w}px"></span><span style="width:1px; background:#fff"></span>`
-              }).join("")}
-            </div>
-            <div class="info"><strong>Gonderici:</strong> ${cargo.sender}</div>
-            <div class="info"><strong>Alici:</strong> ${cargo.receiver}</div>
-            <div class="info"><strong>Nereye:</strong> ${cargo.to}</div>
-            <div class="info"><strong>Tutar:</strong> ${cargo.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</div>
-            <script>window.onload = function() { window.print(); }</script>
-          </body>
-        </html>
-      `)
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head><title>Barkod - ${cargo.trackingNo}</title>
+<style>
+  @page { margin: 2mm; size: 100mm 70mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; width: 100mm; padding: 3mm; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1mm; }
+  .dest-city { font-size: 22pt; font-weight: bold; letter-spacing: 1px; }
+  .gonderim-kodu { font-size: 10pt; font-weight: bold; text-align: right; }
+  .from-city { font-size: 11pt; margin-bottom: 0.5mm; }
+  .tracking-no { font-size: 14pt; font-weight: bold; text-align: right; }
+  .hat-name { font-size: 11pt; font-weight: bold; margin-bottom: 2mm; }
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 2mm; font-size: 8pt; }
+  .info-table td, .info-table th { border: 0.5px solid #000; padding: 1.5mm 2mm; vertical-align: top; }
+  .info-table .section-header { text-align: center; font-weight: bold; font-size: 8pt; background: #f0f0f0; padding: 1mm; }
+  .info-table .label { font-weight: bold; width: 35mm; white-space: nowrap; }
+  .footer { font-size: 7pt; text-align: center; margin-top: 2mm; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="dest-city">${destCity.toUpperCase()}</div>
+      <div class="from-city">${fromCity.toUpperCase()}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gonderim-kodu">${gonderimKodu}</div>
+      <div class="tracking-no">${cargo.trackingNo}</div>
+    </div>
+  </div>
+
+  <div class="hat-name">${hatName}</div>
+
+  <table class="info-table">
+    <tr>
+      <td colspan="2" class="section-header">GÖNDERİCİ BİLGİLERİ</td>
+      <td class="label">Tarih</td>
+      <td>${today}</td>
+    </tr>
+    <tr>
+      <td colspan="2" rowspan="3" style="vertical-align:top; line-height: 1.5;">
+        ${cargo.sender.replace(/\n/g, "<br>")}<br>
+        ${senderPhone}<br>
+        ${cargo.from}
+      </td>
+      <td class="label">Türü</td>
+      <td>Paket</td>
+    </tr>
+    <tr>
+      <td class="label">KG/DS</td>
+      <td>-</td>
+    </tr>
+    <tr>
+      <td class="label">Adet</td>
+      <td>${cargo.pieces}/1</td>
+    </tr>
+    <tr>
+      <td colspan="4" class="section-header">ALICI BİLGİLERİ</td>
+    </tr>
+    <tr>
+      <td colspan="4" style="line-height: 1.5;">
+        ${cargo.receiver.replace(/\n/g, "<br>")}<br>
+        ${receiverPhone}<br>
+        ${cargo.to}
+      </td>
+    </tr>
+  </table>
+
+  <div class="footer">Kayıp Halinde İletişim İçin Lütfen Arayınız: 0850 333 35 35</div>
+
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`)
       printWindow.document.close()
     }
-  }, [onToast])
+  }, [onToast, kullaniciSube])
 
   return (
     <div className="px-4 pb-4">
@@ -115,9 +180,9 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
               <TableHead className="w-[120px] text-center font-semibold text-foreground">Kargo Durum</TableHead>
               <TableHead className="w-[80px]"></TableHead>
               <TableHead className="font-semibold text-foreground">Takip No</TableHead>
-              <TableHead className="w-[60px] text-center font-semibold text-foreground">Parca</TableHead>
-              <TableHead className="font-semibold text-foreground">Gonderici</TableHead>
-              <TableHead className="font-semibold text-foreground">Alici</TableHead>
+              <TableHead className="w-[60px] text-center font-semibold text-foreground">Parça</TableHead>
+              <TableHead className="font-semibold text-foreground">Gönderici</TableHead>
+              <TableHead className="font-semibold text-foreground">Alıcı</TableHead>
               <TableHead className="font-semibold text-foreground">Nereden</TableHead>
               <TableHead className="font-semibold text-foreground">Nereye</TableHead>
               <TableHead className="text-right font-semibold text-foreground">Tutar</TableHead>
@@ -125,7 +190,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                 <div>Sefer Hareket</div><div>Tarihi</div>
               </TableHead>
               <TableHead className="text-center font-semibold text-foreground">
-                <div>Sefer Varis</div><div>Tarihi</div>
+                <div>Sefer Varış</div><div>Tarihi</div>
               </TableHead>
               <TableHead className="font-semibold text-foreground">Plaka</TableHead>
             </TableRow>
@@ -134,7 +199,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
             {cargos.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={12} className="py-12 text-center text-muted-foreground">
-                  Gosterilecek kargo bulunamadi.
+                  Gösterilecek kargo bulunamadı.
                 </TableCell>
               </TableRow>
             ) : (
@@ -149,8 +214,8 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                         <button
                           onClick={() => onLoadCargo?.(cargo.id, cargo.trackingNo)}
                           className="rounded p-1 text-muted-foreground transition-colors hover:bg-cargo-green/10 hover:text-cargo-green"
-                          aria-label="Kargo yukle"
-                          title="Kargo Yukle"
+                          aria-label="Kargo yükle"
+                          title="Kargo Yükle"
                         >
                           <Menu className="h-4 w-4" />
                         </button>
@@ -160,16 +225,16 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                       <button
                         onClick={() => onEditCargo?.(cargo)}
                         className="rounded p-1 text-muted-foreground transition-colors hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
-                        aria-label="Kargo bilgileri duzenle"
-                        title="Kargo Bilgileri Duzenle"
+                        aria-label="Kargo bilgileri düzenle"
+                        title="Kargo Bilgileri Düzenle"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handlePrintBarcode(cargo)}
                         className="rounded p-1 text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400"
-                        aria-label="Barkod yazdir"
-                        title="Barkod Yazdir"
+                        aria-label="Barkod yazdır"
+                        title="Barkod Yazdır"
                       >
                         <Barcode className="h-3.5 w-3.5" />
                       </button>
@@ -179,7 +244,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                     <button
                       onClick={() => handleCopyTracking(cargo.trackingNo, cargo.id)}
                       className="group flex items-center gap-1.5 text-sm text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      title="Tiklayarak kopyala"
+                      title="Tıklayarak kopyala"
                     >
                       <span className="underline">{cargo.trackingNo}</span>
                       {copiedId === cargo.id ? (
