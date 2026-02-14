@@ -53,6 +53,33 @@ body {
     --cargo-dark: 140 40% 22%;
     --cargo-teal: 170 50% 35%;
   }
+
+  .dark {
+    --background: 220 15% 10%;
+    --foreground: 210 20% 90%;
+    --card: 220 15% 13%;
+    --card-foreground: 210 20% 90%;
+    --popover: 220 15% 13%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 140 50% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 210 20% 90%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 140 50% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 22%;
+    --input: 220 15% 22%;
+    --ring: 140 50% 40%;
+    --cargo-green: 140 50% 40%;
+    --cargo-green-light: 140 40% 50%;
+    --cargo-orange: 30 85% 55%;
+    --cargo-dark: 140 40% 30%;
+    --cargo-teal: 170 45% 40%;
+  }
 }
 
 @layer base {

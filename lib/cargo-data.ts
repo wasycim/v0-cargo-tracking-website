@@ -29,7 +29,7 @@ export const statusLabels: Record<CargoStatus, string> = {
 }
 
 export const statusColors: Record<CargoStatus, { bg: string; text: string; border: string }> = {
-  yuklenecek: { bg: "bg-white", text: "text-cargo-green", border: "border-cargo-green" },
+  yuklenecek: { bg: "bg-card", text: "text-cargo-green", border: "border-cargo-green" },
   yolda: { bg: "bg-cargo-green", text: "text-white", border: "border-cargo-green" },
   giden: { bg: "bg-cargo-dark", text: "text-white", border: "border-cargo-dark" },
   devir: { bg: "bg-cargo-orange", text: "text-white", border: "border-cargo-orange" },

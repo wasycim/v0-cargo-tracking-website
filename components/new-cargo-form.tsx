@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { X, Send, Truck, UserPlus, Eraser } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { X, Send, Truck, UserPlus, Eraser, Check, AlertCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -11,63 +10,188 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { Cargo } from "@/lib/cargo-data"
 
 interface NewCargoFormProps {
   onClose: () => void
-  onSubmit: () => void
+  onSubmit: (cargo: Cargo) => void
 }
 
-type CustomerType = "gercek" | "tuzel" | "hizmet"
-type ReceiverType = "gercek" | "tuzel"
 type PackageType = "dosya" | "paket" | "koli" | "cuval"
 
 export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
-  const [senderType, setSenderType] = useState<CustomerType>("gercek")
-  const [receiverType, setReceiverType] = useState<ReceiverType>("gercek")
+  const [isVisible, setIsVisible] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
   const [packageType, setPackageType] = useState<PackageType>("dosya")
 
-  const [senderData, setSenderData] = useState({
-    tcKimlik: "",
-    ad: "",
-    soyad: "",
-    email: "",
-    telefon: "",
-    dogrulamaKodu: "",
-    atfKullan: false,
-  })
+  // Sender state
+  const [senderTc, setSenderTc] = useState("")
+  const [senderAd, setSenderAd] = useState("")
+  const [senderSoyad, setSenderSoyad] = useState("")
+  const [senderEmail, setSenderEmail] = useState("")
+  const [senderTelefon, setSenderTelefon] = useState("")
+  const [dogrulamaKodu, setDogrulamaKodu] = useState("")
+  const [sentCode, setSentCode] = useState("")
+  const [isCodeSent, setIsCodeSent] = useState(false)
+  const [isCodeVerified, setIsCodeVerified] = useState(false)
+  const [phoneError, setPhoneError] = useState("")
+  const [codeError, setCodeError] = useState("")
+  const [customerSaved, setCustomerSaved] = useState(false)
 
-  const [receiverData, setReceiverData] = useState({
-    ad: "",
-    soyad: "",
-    telefon: "",
-    sube: "",
-  })
+  // Receiver state
+  const [receiverAd, setReceiverAd] = useState("")
+  const [receiverSoyad, setReceiverSoyad] = useState("")
+  const [receiverTelefon, setReceiverTelefon] = useState("")
+  const [receiverSube, setReceiverSube] = useState("")
 
-  const [shipmentData, setShipmentData] = useState({
-    gonderimTipi: "ah",
-    icerik: "",
-    desiKg: "0",
-    adet: "1",
-    degerliKargo: false,
-    odemeTipi: "po",
-    indirimTutar: "0,00",
-    toplamTutar: "200,00",
-  })
+  // Shipment state
+  const [gonderimTipi, setGonderimTipi] = useState("ah")
+  const [icerik, setIcerik] = useState("")
+  const [fiyat, setFiyat] = useState("100")
+  const [adet, setAdet] = useState("1")
+  const [odemeTipi, setOdemeTipi] = useState("pesin")
+  const [indirimTutar, setIndirimTutar] = useState("0")
 
-  const handleSubmit = () => {
-    onSubmit()
-    onClose()
+  // Animation
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setIsVisible(true)
+    })
+  }, [])
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true)
+    setIsVisible(false)
+    setTimeout(() => {
+      onClose()
+    }, 300)
+  }, [onClose])
+
+  // Validate phone (10 digit Turkish number)
+  const validatePhone = (phone: string): boolean => {
+    const cleaned = phone.replace(/\s/g, "")
+    return /^5\d{9}$/.test(cleaned)
+  }
+
+  const handleSendCode = () => {
+    setPhoneError("")
+    if (!validatePhone(senderTelefon)) {
+      setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
+      return
+    }
+    const code = String(Math.floor(1000 + Math.random() * 9000))
+    setSentCode(code)
+    setIsCodeSent(true)
+    setCodeError("")
+    // In a real app this would send via SMS API
+    alert(`Dogrulama kodu gonderildi: ${code}`)
+  }
+
+  const handleVerifyCode = () => {
+    if (dogrulamaKodu === sentCode) {
+      setIsCodeVerified(true)
+      setCodeError("")
+    } else {
+      setCodeError("Kod hatali, tekrar deneyin")
+      setIsCodeVerified(false)
+    }
+  }
+
+  const handleSaveCustomer = () => {
+    if (!senderTc || !senderAd || !senderSoyad || !senderTelefon) {
+      alert("Lutfen TC, Ad, Soyad ve Telefon alanlarini doldurun")
+      return
+    }
+    if (!validatePhone(senderTelefon)) {
+      setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
+      return
+    }
+    // Simulated save (in a real app this goes to DB)
+    setCustomerSaved(true)
+    setTimeout(() => setCustomerSaved(false), 3000)
+  }
+
+  const handleClearSender = () => {
+    setSenderTc("")
+    setSenderAd("")
+    setSenderSoyad("")
+    setSenderEmail("")
+    setSenderTelefon("")
+    setDogrulamaKodu("")
+    setSentCode("")
+    setIsCodeSent(false)
+    setIsCodeVerified(false)
+    setPhoneError("")
+    setCodeError("")
+  }
+
+  const handleClearReceiver = () => {
+    setReceiverAd("")
+    setReceiverSoyad("")
+    setReceiverTelefon("")
+    setReceiverSube("")
+  }
+
+  // Calculate total
+  const priceNum = Math.max(Number(fiyat) || 0, 100)
+  const discountNum = Number(indirimTutar) || 0
+  const toplamTutar = Math.max(priceNum - discountNum, 0)
+
+  const handleSubmitCargo = () => {
+    if (!senderAd || !receiverAd) {
+      alert("Gonderici ve Alici bilgilerini doldurun")
+      return
+    }
+
+    const now = new Date()
+    const dateStr = now.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
+    const timeStr = now.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+
+    const newCargo: Cargo = {
+      id: `new-${Date.now()}`,
+      status: "yuklenecek",
+      trackingNo: `203 ${String(Math.floor(Math.random() * 999)).padStart(3, "0")} ${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`,
+      pieces: Number(adet) || 1,
+      sender: `${senderAd} ${senderSoyad}`.trim(),
+      receiver: `${receiverAd} ${receiverSoyad}`.trim(),
+      from: "Izmit (Kocaeli) / Gebze",
+      fromCity: "Gebze",
+      to: receiverSube || "Belirtilmedi",
+      toCity: receiverSube ? receiverSube.split("/").pop()?.trim() || "" : "",
+      amount: toplamTutar,
+      departureDate: dateStr,
+      departureTime: timeStr,
+      arrivalDate: "",
+      arrivalTime: "",
+      plate: "",
+    }
+
+    onSubmit(newCargo)
+    handleClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 py-8">
-      <div className="w-full max-w-7xl rounded-lg bg-background shadow-2xl">
+    <div
+      className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 transition-all duration-300 ease-out ${
+        isVisible && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
+      }`}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose()
+      }}
+    >
+      <div
+        className={`w-full max-w-6xl rounded-xl border border-border bg-card shadow-2xl transition-all duration-300 ease-out ${
+          isVisible && !isClosing
+            ? "translate-y-0 scale-100 opacity-100"
+            : "translate-y-8 scale-95 opacity-0"
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-foreground">Yeni Kargo - Gebze</h2>
           <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={handleClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label="Kapat"
           >
             <X className="h-5 w-5" />
@@ -79,87 +203,58 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
           {/* Top Two Sections */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Gonderici Bilgileri */}
-            <div className="rounded-lg border border-cargo-green">
-              <div className="rounded-t-lg bg-cargo-green px-4 py-2.5">
+            <div className="overflow-hidden rounded-lg border border-cargo-green">
+              <div className="bg-cargo-green px-4 py-2.5">
                 <h3 className="text-center text-sm font-semibold text-white">Gonderici Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-4">
-                  <label className="mb-2 block text-xs text-muted-foreground">
-                    Musteri Tipi <span className="text-red-500">*</span>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                    {"Musteri Tipi"} <span className="text-destructive">*</span>
                   </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSenderType("gercek")}
-                      className={`rounded px-4 py-2 text-xs font-medium transition-colors ${
-                        senderType === "gercek"
-                          ? "bg-cargo-dark text-white"
-                          : "border border-border bg-card text-foreground hover:bg-muted"
-                      }`}
-                    >
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">
                       Gercek Kisi
-                    </button>
+                    </span>
                     <button
-                      onClick={() => setSenderType("tuzel")}
-                      className={`rounded px-4 py-2 text-xs font-medium transition-colors ${
-                        senderType === "tuzel"
-                          ? "bg-cargo-dark text-white"
-                          : "border border-border bg-card text-foreground hover:bg-muted"
-                      }`}
+                      onClick={handleSaveCustomer}
+                      className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-cargo-green hover:bg-cargo-green/5"
                     >
-                      Tuzel Kisi
-                    </button>
-                    <button
-                      onClick={() => setSenderType("hizmet")}
-                      className={`flex items-center gap-1 rounded px-4 py-2 text-xs font-medium transition-colors ${
-                        senderType === "hizmet"
-                          ? "bg-cargo-green text-white"
-                          : "border border-cargo-green bg-card text-cargo-green hover:bg-emerald-50"
-                      }`}
-                    >
-                      <Truck className="h-3.5 w-3.5" />
-                      Hizmet Ici
-                    </button>
-                    <button className="flex items-center gap-1 rounded border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">
                       <UserPlus className="h-3.5 w-3.5" />
-                      Musteri Ekle
+                      {customerSaved ? "Kaydedildi!" : "Musteri Ekle"}
                     </button>
-                    <button className="flex items-center gap-1 rounded border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">
+                    <button
+                      onClick={handleClearSender}
+                      className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-destructive hover:bg-destructive/5"
+                    >
                       <Eraser className="h-3.5 w-3.5" />
                       Temizle
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-3 flex gap-3">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="TC Kimlik No"
-                      value={senderData.tcKimlik}
-                      onChange={(e) => setSenderData({ ...senderData, tcKimlik: e.target.value })}
-                      className="border-border"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-9 items-center rounded bg-cargo-dark px-4 text-xs font-semibold text-white">
-                      TR
-                    </span>
-                    <span className="text-sm text-muted-foreground">Yabanci Uyruk</span>
-                  </div>
+                <div className="mb-3">
+                  <Input
+                    placeholder="TC Kimlik No"
+                    value={senderTc}
+                    onChange={(e) => setSenderTc(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                    className="border-border bg-background"
+                    maxLength={11}
+                  />
                 </div>
 
                 <div className="mb-3 flex gap-3">
                   <Input
                     placeholder="Ad"
-                    value={senderData.ad}
-                    onChange={(e) => setSenderData({ ...senderData, ad: e.target.value })}
-                    className="border-border"
+                    value={senderAd}
+                    onChange={(e) => setSenderAd(e.target.value)}
+                    className="border-border bg-background"
                   />
                   <Input
                     placeholder="Soyad"
-                    value={senderData.soyad}
-                    onChange={(e) => setSenderData({ ...senderData, soyad: e.target.value })}
-                    className="border-border"
+                    value={senderSoyad}
+                    onChange={(e) => setSenderSoyad(e.target.value)}
+                    className="border-border bg-background"
                   />
                 </div>
 
@@ -167,80 +262,94 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                   <Input
                     placeholder="E-Posta"
                     type="email"
-                    value={senderData.email}
-                    onChange={(e) => setSenderData({ ...senderData, email: e.target.value })}
-                    className="border-border"
+                    value={senderEmail}
+                    onChange={(e) => setSenderEmail(e.target.value)}
+                    className="border-border bg-background"
                   />
                 </div>
 
-                <div className="mb-3 flex gap-3">
-                  <Input
-                    placeholder="Telefon"
-                    value={senderData.telefon}
-                    onChange={(e) => setSenderData({ ...senderData, telefon: e.target.value })}
-                    className="flex-1 border-border"
-                  />
-                  <button className="flex items-center gap-2 rounded bg-cargo-dark px-5 py-2 text-sm font-semibold text-white hover:bg-cargo-green transition-colors">
-                    <Send className="h-4 w-4" />
-                    Kod Gonder
-                  </button>
+                <div className="mb-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="5XX XXX XX XX"
+                        value={senderTelefon}
+                        onChange={(e) => {
+                          setSenderTelefon(e.target.value.replace(/\D/g, "").slice(0, 10))
+                          setPhoneError("")
+                        }}
+                        className={`border-border bg-background ${phoneError ? "border-destructive" : ""}`}
+                        maxLength={10}
+                      />
+                    </div>
+                    <button
+                      onClick={handleSendCode}
+                      className="flex items-center gap-2 whitespace-nowrap rounded-md bg-cargo-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-green"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Kod Gonder
+                    </button>
+                  </div>
+                  {phoneError && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                      <AlertCircle className="h-3 w-3" />
+                      {phoneError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
                   <Input
                     placeholder="Dogrulama Kodu"
-                    value={senderData.dogrulamaKodu}
-                    onChange={(e) =>
-                      setSenderData({ ...senderData, dogrulamaKodu: e.target.value })
-                    }
-                    className="flex-1 border-border"
+                    value={dogrulamaKodu}
+                    onChange={(e) => {
+                      setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      setCodeError("")
+                    }}
+                    disabled={!isCodeSent}
+                    className={`flex-1 border-border bg-background ${isCodeVerified ? "border-cargo-green" : ""}`}
+                    maxLength={4}
                   />
-                  <button className="flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-muted">
-                    {"✓"}
+                  <button
+                    onClick={handleVerifyCode}
+                    disabled={!isCodeSent || dogrulamaKodu.length < 4}
+                    className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${
+                      isCodeVerified
+                        ? "border-cargo-green bg-cargo-green text-white"
+                        : "border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
+                    }`}
+                    aria-label="Dogrula"
+                  >
+                    <Check className="h-4 w-4" />
                   </button>
                 </div>
-
-                <label className="flex items-center gap-2 text-sm text-foreground">
-                  <Checkbox
-                    checked={senderData.atfKullan}
-                    onCheckedChange={(v) =>
-                      setSenderData({ ...senderData, atfKullan: v as boolean })
-                    }
-                  />
-                  ATF Kullan
-                </label>
+                {codeError && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    {codeError}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Alici Bilgileri */}
-            <div className="rounded-lg border border-red-400">
-              <div className="rounded-t-lg bg-red-500 px-4 py-2.5">
+            <div className="overflow-hidden rounded-lg border border-cargo-teal">
+              <div className="bg-cargo-teal px-4 py-2.5">
                 <h3 className="text-center text-sm font-semibold text-white">Alici Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-4">
-                  <label className="mb-2 block text-xs text-muted-foreground">
-                    Musteri Tipi <span className="text-red-500">*</span>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                    {"Musteri Tipi"} <span className="text-destructive">*</span>
                   </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setReceiverType("gercek")}
-                      className={`rounded px-4 py-2 text-xs font-medium transition-colors ${
-                        receiverType === "gercek"
-                          ? "bg-cargo-dark text-white"
-                          : "border border-border bg-card text-foreground hover:bg-muted"
-                      }`}
-                    >
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-md bg-cargo-dark px-4 py-2 text-xs font-medium text-white">
                       Gercek Kisi
-                    </button>
+                    </span>
                     <button
-                      onClick={() => setReceiverType("tuzel")}
-                      className={`rounded px-4 py-2 text-xs font-medium transition-colors ${
-                        receiverType === "tuzel"
-                          ? "bg-cargo-dark text-white"
-                          : "border border-border bg-card text-foreground hover:bg-muted"
-                      }`}
+                      onClick={handleClearReceiver}
+                      className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-destructive hover:bg-destructive/5"
                     >
-                      Tuzel Kisi
-                    </button>
-                    <button className="flex items-center gap-1 rounded border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted">
                       <Eraser className="h-3.5 w-3.5" />
                       Temizle
                     </button>
@@ -250,47 +359,40 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                 <div className="mb-3 flex gap-3">
                   <Input
                     placeholder="Ad"
-                    value={receiverData.ad}
-                    onChange={(e) => setReceiverData({ ...receiverData, ad: e.target.value })}
-                    className="border-border"
+                    value={receiverAd}
+                    onChange={(e) => setReceiverAd(e.target.value)}
+                    className="border-border bg-background"
                   />
                   <Input
                     placeholder="Soyad"
-                    value={receiverData.soyad}
-                    onChange={(e) => setReceiverData({ ...receiverData, soyad: e.target.value })}
-                    className="border-border"
+                    value={receiverSoyad}
+                    onChange={(e) => setReceiverSoyad(e.target.value)}
+                    className="border-border bg-background"
                   />
                 </div>
 
                 <div className="mb-3">
                   <Input
-                    placeholder="Telefon"
-                    value={receiverData.telefon}
-                    onChange={(e) => setReceiverData({ ...receiverData, telefon: e.target.value })}
-                    className="border-border"
+                    placeholder="Telefon (5XX XXX XX XX)"
+                    value={receiverTelefon}
+                    onChange={(e) => setReceiverTelefon(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    className="border-border bg-background"
+                    maxLength={10}
                   />
                 </div>
 
-                <div className="mb-3 flex gap-3">
+                <div className="mb-4">
                   <Input
-                    placeholder="Alici Sube/Il/Ilce"
-                    value={receiverData.sube}
-                    onChange={(e) => setReceiverData({ ...receiverData, sube: e.target.value })}
-                    className="flex-1 border-border"
+                    placeholder="Alici Sube / Il / Ilce"
+                    value={receiverSube}
+                    onChange={(e) => setReceiverSube(e.target.value)}
+                    className="border-border bg-background"
                   />
-                  <button className="flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-muted" aria-label="Liste">
-                    {"☰"}
-                  </button>
-                  <button className="flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground hover:bg-muted" aria-label="Saat">
-                    {"⏱"}
-                  </button>
                 </div>
 
-                <button className="w-full rounded bg-cargo-teal px-4 py-2.5 text-sm font-semibold text-white hover:bg-cargo-green transition-colors">
-                  <div className="flex items-center justify-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Kargo Tasima Plani
-                  </div>
+                <button className="flex w-full items-center justify-center gap-2 rounded-md bg-cargo-teal px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-cargo-green">
+                  <Truck className="h-4 w-4" />
+                  Kargo Tasima Plani
                 </button>
               </div>
             </div>
@@ -299,53 +401,47 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
           {/* Bottom Three Sections */}
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Gonderi Bilgileri */}
-            <div className="rounded-lg border border-cargo-green">
-              <div className="rounded-t-lg bg-cargo-green px-4 py-2.5">
+            <div className="overflow-hidden rounded-lg border border-cargo-green">
+              <div className="bg-cargo-green px-4 py-2.5">
                 <h3 className="text-center text-sm font-semibold text-white">Gonderi Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-3">
-                  <Select
-                    value={shipmentData.gonderimTipi}
-                    onValueChange={(v) =>
-                      setShipmentData({ ...shipmentData, gonderimTipi: v })
-                    }
-                  >
-                    <SelectTrigger className="border-border">
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Gonderim Tipi</label>
+                  <Select value={gonderimTipi} onValueChange={setGonderimTipi}>
+                    <SelectTrigger className="border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ah">Alici Haberli - AH</SelectItem>
-                      <SelectItem value="gh">Gonderici Haberli - GH</SelectItem>
-                      <SelectItem value="kapida">Kapida Odeme</SelectItem>
+                      <SelectItem value="ah">Alici Haberli</SelectItem>
+                      <SelectItem value="gh">Gonderici Haberli</SelectItem>
+                      <SelectItem value="agh">Alici ve Gonderici Haberli</SelectItem>
                     </SelectContent>
                   </Select>
-                  <label className="mt-1 block text-xs text-muted-foreground">Gonderim Tipi</label>
                 </div>
                 <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Icerik</label>
                   <Input
-                    placeholder="Icerik"
-                    value={shipmentData.icerik}
-                    onChange={(e) =>
-                      setShipmentData({ ...shipmentData, icerik: e.target.value })
-                    }
-                    className="border-border"
+                    placeholder="Kargo icerigi"
+                    value={icerik}
+                    onChange={(e) => setIcerik(e.target.value)}
+                    className="border-border bg-background"
                   />
                 </div>
               </div>
             </div>
 
             {/* Gonderi Ozellikleri */}
-            <div className="rounded-lg border border-cargo-teal">
-              <div className="rounded-t-lg bg-cargo-teal px-4 py-2.5">
+            <div className="overflow-hidden rounded-lg border border-cargo-teal">
+              <div className="bg-cargo-teal px-4 py-2.5">
                 <h3 className="text-center text-sm font-semibold text-white">Gonderi Ozellikleri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-3">
-                  <label className="mb-2 block text-xs text-muted-foreground">
-                    Cinsi <span className="text-red-500">*</span>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    {"Cinsi"} <span className="text-destructive">*</span>
                   </label>
-                  <div className="flex rounded border border-border overflow-hidden">
+                  <div className="flex overflow-hidden rounded-md border border-border">
                     {(["dosya", "paket", "koli", "cuval"] as PackageType[]).map((type) => (
                       <button
                         key={type}
@@ -362,87 +458,71 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                   </div>
                 </div>
 
-                <div className="mb-3 flex gap-3">
+                <div className="flex gap-3">
                   <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Fiyat (TL)</label>
                     <Input
-                      value={shipmentData.desiKg}
-                      onChange={(e) =>
-                        setShipmentData({ ...shipmentData, desiKg: e.target.value })
-                      }
-                      className="border-border text-right"
+                      type="number"
+                      min={100}
+                      value={fiyat}
+                      onChange={(e) => setFiyat(e.target.value)}
+                      onBlur={() => {
+                        const val = Number(fiyat)
+                        if (val < 100) setFiyat("100")
+                      }}
+                      className="border-border bg-background text-right"
                     />
-                    <label className="mt-1 block text-xs text-muted-foreground">Desi/KG</label>
                   </div>
                   <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Adet</label>
                     <Input
-                      value={shipmentData.adet}
-                      onChange={(e) =>
-                        setShipmentData({ ...shipmentData, adet: e.target.value })
-                      }
-                      className="border-border text-right"
+                      type="number"
+                      min={1}
+                      value={adet}
+                      onChange={(e) => setAdet(e.target.value)}
+                      className="border-border bg-background text-right"
                     />
-                    <label className="mt-1 block text-xs text-muted-foreground">Adet</label>
                   </div>
                 </div>
-
-                <label className="flex items-center gap-2 text-sm text-foreground">
-                  <Checkbox
-                    checked={shipmentData.degerliKargo}
-                    onCheckedChange={(v) =>
-                      setShipmentData({
-                        ...shipmentData,
-                        degerliKargo: v as boolean,
-                      })
-                    }
-                  />
-                  Degerli Kargo
-                </label>
               </div>
             </div>
 
             {/* Ucret Bilgileri */}
-            <div className="rounded-lg border border-cargo-green">
-              <div className="rounded-t-lg bg-cargo-green px-4 py-2.5">
+            <div className="overflow-hidden rounded-lg border border-cargo-green">
+              <div className="bg-cargo-green px-4 py-2.5">
                 <h3 className="text-center text-sm font-semibold text-white">Ucret Bilgileri</h3>
               </div>
               <div className="p-4">
                 <div className="mb-3 flex gap-3">
                   <div className="flex-1">
-                    <Select
-                      value={shipmentData.odemeTipi}
-                      onValueChange={(v) =>
-                        setShipmentData({ ...shipmentData, odemeTipi: v })
-                      }
-                    >
-                      <SelectTrigger className="border-border">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Odeme Tipi</label>
+                    <Select value={odemeTipi} onValueChange={setOdemeTipi}>
+                      <SelectTrigger className="border-border bg-background">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="po">Pesin Odeme - PO(+)</SelectItem>
-                        <SelectItem value="go">Gonderici Odeme - GO</SelectItem>
-                        <SelectItem value="ao">Alici Odeme - AO</SelectItem>
+                        <SelectItem value="pesin">Pesin Odeme</SelectItem>
+                        <SelectItem value="kart">Kartla Odeme</SelectItem>
                       </SelectContent>
                     </Select>
-                    <label className="mt-1 block text-xs text-muted-foreground">Odeme Tipi</label>
                   </div>
                   <div className="w-28">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Indirim</label>
                     <Input
-                      value={shipmentData.indirimTutar}
-                      onChange={(e) =>
-                        setShipmentData({
-                          ...shipmentData,
-                          indirimTutar: e.target.value,
-                        })
-                      }
-                      className="border-border text-right"
+                      type="number"
+                      min={0}
+                      value={indirimTutar}
+                      onChange={(e) => setIndirimTutar(e.target.value)}
+                      className="border-border bg-background text-right"
                     />
-                    <label className="mt-1 block text-xs text-muted-foreground">Indirim Tutar</label>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between rounded border border-border px-4 py-3">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-background px-4 py-3">
                   <span className="text-sm text-muted-foreground">Toplam Tutar</span>
-                  <span className="text-2xl font-bold text-foreground">{shipmentData.toplamTutar}</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {toplamTutar.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
             </div>
@@ -452,15 +532,15 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <button
-            onClick={onClose}
-            className="flex items-center gap-2 rounded px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            onClick={handleClose}
+            className="flex items-center gap-2 rounded-md px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
             Iptal
           </button>
           <button
-            onClick={handleSubmit}
-            className="flex items-center gap-2 rounded bg-cargo-dark px-6 py-2.5 text-sm font-semibold text-white hover:bg-cargo-green transition-colors"
+            onClick={handleSubmitCargo}
+            className="flex items-center gap-2 rounded-md bg-cargo-dark px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cargo-green"
           >
             <Truck className="h-4 w-4" />
             Kargo Ekle

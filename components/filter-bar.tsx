@@ -16,7 +16,7 @@ interface FilterBarProps {
 
 export function FilterBar({ filters, onFilterChange }: FilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-6 border-b border-border px-4 py-3">
+    <div className="flex flex-wrap items-center gap-6 border-b border-border bg-card px-4 py-3">
       <div className="flex items-center gap-4">
         <label className="flex items-center gap-2 text-sm text-foreground">
           <Checkbox
