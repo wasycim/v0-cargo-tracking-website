@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Save } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { CityPicker } from "@/components/city-picker"
 import type { Cargo } from "@/lib/cargo-data"
 
 interface EditCargoFormProps {
@@ -94,25 +95,16 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
             />
           </div>
 
-          <div className="mb-3 flex gap-3">
-            <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Yeri</label>
-              <Input
-                placeholder="Il / Ilce"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="border-border bg-background"
-              />
-            </div>
-            <div className="w-32">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Sehir</label>
-              <Input
-                placeholder="Sehir"
-                value={toCity}
-                onChange={(e) => setToCity(e.target.value)}
-                className="border-border bg-background"
-              />
-            </div>
+          <div className="mb-3">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Yeri (Il / Ilce)</label>
+            <CityPicker
+              value={to}
+              onChange={(val) => {
+                setTo(val)
+                const parts = val.split("/")
+                setToCity(parts.length > 1 ? parts[1].trim() : parts[0].trim())
+              }}
+            />
           </div>
 
           <div className="mb-4 flex gap-3">

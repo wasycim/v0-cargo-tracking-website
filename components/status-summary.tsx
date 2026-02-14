@@ -9,15 +9,13 @@ interface StatusSummaryProps {
 
 export function StatusSummary({ cargos, kasaTutari }: StatusSummaryProps) {
   const yuklenecekCount = cargos.filter((c) => c.status === "yuklenecek").length
-  const yoldaCount = cargos.filter((c) => c.status === "yolda").length
   const gidenCount = cargos.filter((c) => c.status === "giden").length
-  const devirCount = cargos.filter((c) => c.status === "devir").length
+  const iptalCount = cargos.filter((c) => c.status === "iptal").length
 
   const items = [
-    { label: "Yuklenecek", count: yuklenecekCount, borderColor: "border-cargo-green", textColor: "text-cargo-green" },
-    { label: "Yolda", count: yoldaCount, borderColor: "border-cargo-green", textColor: "text-cargo-green" },
-    { label: "Giden", count: gidenCount, borderColor: "border-cargo-dark", textColor: "text-cargo-dark" },
-    { label: "Devir", count: devirCount, borderColor: "border-cargo-orange", textColor: "text-cargo-orange" },
+    { label: "Yuklenecek", count: yuklenecekCount, borderColor: "border-cargo-green", badgeBg: "bg-cargo-green" },
+    { label: "Giden", count: gidenCount, borderColor: "border-cargo-dark", badgeBg: "bg-cargo-dark" },
+    { label: "Iptal", count: iptalCount, borderColor: "border-red-500", badgeBg: "bg-red-500" },
   ]
 
   return (
@@ -27,8 +25,8 @@ export function StatusSummary({ cargos, kasaTutari }: StatusSummaryProps) {
           key={item.label}
           className={`flex items-center gap-3 rounded-md border bg-card px-4 py-2 ${item.borderColor}`}
         >
-          <span className={`text-sm font-medium ${item.textColor}`}>{item.label}</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cargo-green text-xs font-bold text-white">
+          <span className="text-sm font-medium text-foreground">{item.label}</span>
+          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${item.badgeBg}`}>
             {item.count}
           </span>
         </div>

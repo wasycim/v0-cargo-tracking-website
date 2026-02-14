@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { CityPicker } from "@/components/city-picker"
 import type { Cargo } from "@/lib/cargo-data"
 
 interface NewCargoFormProps {
@@ -347,7 +348,8 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                 </div>
 
                 <div>
-                  <Input placeholder="Alici Sube / Il / Ilce" value={receiverSube} onChange={(e) => setReceiverSube(e.target.value)} className="border-border bg-background" />
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Alici Sube / Il / Ilce</label>
+                  <CityPicker value={receiverSube} onChange={setReceiverSube} placeholder="Il veya ilce secin..." />
                 </div>
               </div>
             </div>

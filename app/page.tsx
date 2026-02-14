@@ -14,19 +14,13 @@ import { NewCargoForm } from "@/components/new-cargo-form"
 import { LoadCargoForm } from "@/components/load-cargo-form"
 import { EditCargoForm } from "@/components/edit-cargo-form"
 import { CancelCargoForm } from "@/components/cancel-cargo-form"
+import { Musteriler } from "@/components/musteriler"
+import type { SavedCustomer } from "@/components/musteriler"
 import { KasaIslemleri } from "@/components/kasa-islemleri"
 import { Raporlar } from "@/components/raporlar"
 import { ToastNotification } from "@/components/toast-notification"
 import { mockCargos } from "@/lib/cargo-data"
 import type { Cargo } from "@/lib/cargo-data"
-
-interface SavedCustomer {
-  tc: string
-  ad: string
-  soyad: string
-  telefon: string
-  email?: string
-}
 
 export default function Page() {
   // Auth state
@@ -49,8 +43,6 @@ export default function Page() {
   const [editingCargo, setEditingCargo] = useState<Cargo | null>(null)
   const [cargos, setCargos] = useState<Cargo[]>(mockCargos)
   const [filters, setFilters] = useState({
-    yolda: true,
-    devir: true,
     giden: true,
     eskiAktif: false,
     iptal: false,
@@ -94,8 +86,6 @@ export default function Page() {
         if (created < oneMonthAgo) return false
       }
       if (cargo.status === "yuklenecek") return true
-      if (cargo.status === "yolda" && !filters.yolda) return false
-      if (cargo.status === "devir" && !filters.devir) return false
       if (cargo.status === "giden" && !filters.giden) return false
       if (cargo.status === "iptal" && !filters.iptal) return false
       if (cargo.status === "teslim") return false
@@ -108,7 +98,9 @@ export default function Page() {
   }
 
   const kasaTutari = useMemo(() => {
-    return filteredCargos.reduce((sum, cargo) => sum + cargo.amount, 0)
+    return filteredCargos
+      .filter((c) => c.status !== "iptal" && c.status !== "teslim")
+      .reduce((sum, cargo) => sum + cargo.amount, 0)
   }, [filteredCargos])
 
   const handleNewCargoSubmit = useCallback((newCargo: Cargo) => {
@@ -116,14 +108,23 @@ export default function Page() {
     showToast("Kargo basariyla eklendi")
   }, [showToast])
 
-  const handleCustomerSaved = useCallback((customer: SavedCustomer) => {
+  const handleCustomerSavedFromForm = useCallback((customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => {
+    setSavedCustomers((prev) => {
+      const exists = prev.find((c) => c.tc === customer.tc)
+      const full: SavedCustomer = { ...customer, durum: "aktif" }
+      if (exists) return prev.map((c) => (c.tc === customer.tc ? full : c))
+      return [...prev, full]
+    })
+    showToast("Musteri eklendi")
+  }, [showToast])
+
+  const handleCustomerSavedFromPage = useCallback((customer: SavedCustomer) => {
     setSavedCustomers((prev) => {
       const exists = prev.find((c) => c.tc === customer.tc)
       if (exists) return prev.map((c) => (c.tc === customer.tc ? customer : c))
       return [...prev, customer]
     })
-    showToast("Musteri eklendi")
-  }, [showToast])
+  }, [])
 
   const handleLoadCargo = useCallback((cargoId: string, trackingNo: string) => {
     setLoadingCargo({ id: cargoId, trackingNo })
@@ -199,7 +200,6 @@ export default function Page() {
       {/* Kargolar */}
       {activePage === "kargolar" && (
         <>
-          {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3">
             <button
               onClick={() => setShowNewCargoForm(true)}
@@ -228,6 +228,15 @@ export default function Page() {
         </>
       )}
 
+      {/* Musteriler */}
+      {activePage === "musteriler" && (
+        <Musteriler
+          customers={savedCustomers}
+          onCustomerSaved={handleCustomerSavedFromPage}
+          onToast={(msg) => showToast(msg)}
+        />
+      )}
+
       {/* Kasa Islemleri */}
       {activePage === "kasaislemleri" && <KasaIslemleri />}
 
@@ -239,7 +248,7 @@ export default function Page() {
         <NewCargoForm
           onClose={() => setShowNewCargoForm(false)}
           onSubmit={handleNewCargoSubmit}
-          onCustomerSaved={handleCustomerSaved}
+          onCustomerSaved={handleCustomerSavedFromForm}
           savedCustomers={savedCustomers}
         />
       )}
@@ -269,7 +278,6 @@ export default function Page() {
         />
       )}
 
-      {/* Toast */}
       {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </main>
   )
