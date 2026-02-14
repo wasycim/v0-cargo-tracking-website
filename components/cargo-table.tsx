@@ -45,7 +45,7 @@ function maskPhone(phone: string): string {
   return phone
 }
 
-export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullaniciSube }: CargoTableProps) {
+export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullaniciSube, subeAyarlar }: CargoTableProps) {
   const [countdown, setCountdown] = useState(120)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -160,7 +160,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
     </tr>
   </table>
 
-  <div class="footer">Kayıp Halinde İletişim İçin Lütfen Arayınız: 0850 333 35 35</div>
+  <div class="footer">Kayıp Halinde İletişim İçin Lütfen Aray��nız: ${fromCity}${subeAyarlar?.peron_no ? ` / Peron ${subeAyarlar.peron_no}` : ""}${subeAyarlar?.sirket_telefon ? ` / ${subeAyarlar.sirket_telefon}` : ""}</div>
 
   <script>window.onload = function() { window.print(); }</script>
 </body>
@@ -199,12 +199,13 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
                 <div>Sefer Varış</div><div>Tarihi</div>
               </TableHead>
               <TableHead className="font-semibold text-foreground">Plaka</TableHead>
+              <TableHead className="font-semibold text-foreground">Firma</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {cargos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={13} className="py-12 text-center text-muted-foreground">
                   Gösterilecek kargo bulunamadı.
                 </TableCell>
               </TableRow>
@@ -291,6 +292,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
                     <div>{cargo.arrivalDate}</div><div>{cargo.arrivalTime}</div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-foreground">{cargo.plate}</TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-foreground">{cargo.firma || "-"}</TableCell>
                 </TableRow>
               ))
             )}

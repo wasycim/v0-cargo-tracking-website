@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react"
+  import { User, KeyRound, Eye, EyeOff, Loader2, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 export interface KullaniciInfo {
@@ -77,8 +77,9 @@ export function LoginPage({ onLogin, onForgotPassword }: LoginPageProps) {
 
           <div className="p-6">
             {error && (
-              <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5">
-                <p className="text-xs text-destructive">{error}</p>
+              <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2.5">
+                <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+                <p className="text-xs font-medium text-destructive">{error}</p>
               </div>
             )}
 

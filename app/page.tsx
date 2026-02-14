@@ -23,6 +23,11 @@ import { Ayarlar } from "@/components/ayarlar"
 import { ToastNotification } from "@/components/toast-notification"
 import type { Cargo } from "@/lib/cargo-data"
 
+interface SubeAyarlar {
+  peron_no?: string
+  sirket_telefon?: string
+}
+
 export default function Page() {
   // Auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -37,6 +42,9 @@ export default function Page() {
 
   // Saved customers
   const [savedCustomers, setSavedCustomers] = useState<SavedCustomer[]>([])
+
+  // Sube ayarlar
+  const [subeAyarlar, setSubeAyarlar] = useState<SubeAyarlar | null>(null)
 
   // Cargo state
   const [showNewCargoForm, setShowNewCargoForm] = useState(false)
@@ -62,29 +70,35 @@ export default function Page() {
     } catch { /* ignore */ }
   }, [])
 
-  // Auto-hide cargos at 03:00
+  // Load cargos from DB when user logs in
   useEffect(() => {
-    const checkTime = () => {
-      const now = new Date()
-      if (now.getHours() === 3 && now.getMinutes() === 0) {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        setCargos((prev) =>
-          prev.map((c) => {
-            if (c.createdAt) {
-              const created = new Date(c.createdAt)
-              if (created < today && c.status !== "iptal" && c.status !== "teslim") {
-                return { ...c, status: "teslim" as const }
-              }
-            }
-            return c
-          })
-        )
-      }
+    if (!isLoggedIn || !kullanici?.sube) return
+    const loadCargos = async () => {
+      try {
+        const res = await fetch(`/api/kargolar?sube=${encodeURIComponent(kullanici.sube)}`)
+        const data = await res.json()
+        if (data.cargos && data.cargos.length > 0) {
+          setCargos(data.cargos)
+        }
+      } catch { /* ignore */ }
     }
-    const interval = setInterval(checkTime, 60000)
-    return () => clearInterval(interval)
-  }, [])
+    loadCargos()
+  }, [isLoggedIn, kullanici?.sube])
+
+  // Load sube ayarlar
+  useEffect(() => {
+    if (!isLoggedIn || !kullanici?.sube) return
+    const loadAyarlar = async () => {
+      try {
+        const res = await fetch(`/api/ayarlar?sube=${encodeURIComponent(kullanici.sube)}`)
+        const data = await res.json()
+        if (data.ayarlar) {
+          setSubeAyarlar({ peron_no: data.ayarlar.peron_no, sirket_telefon: data.ayarlar.sirket_telefon })
+        }
+      } catch { /* ignore */ }
+    }
+    loadAyarlar()
+  }, [isLoggedIn, kullanici?.sube])
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     setToast({ message, type })
@@ -100,6 +114,7 @@ export default function Page() {
     setKullanici(null)
     localStorage.removeItem("kargo_user")
     setCargos([])
+    setSubeAyarlar(null)
   }, [])
 
   const filteredCargos = useMemo(() => {
@@ -129,10 +144,34 @@ export default function Page() {
       .reduce((sum, cargo) => sum + cargo.amount, 0)
   }, [filteredCargos])
 
+  // Save cargo to DB
+  const saveCargoDB = useCallback(async (cargo: Cargo) => {
+    if (!kullanici?.sube) return
+    try {
+      await fetch("/api/kargolar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...cargo, sube: kullanici.sube, kullanici_id: kullanici.id }),
+      })
+    } catch { /* ignore */ }
+  }, [kullanici])
+
+  // Update cargo in DB
+  const updateCargoDB = useCallback(async (id: string, updates: Partial<Cargo>) => {
+    try {
+      await fetch("/api/kargolar", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates }),
+      })
+    } catch { /* ignore */ }
+  }, [])
+
   const handleNewCargoSubmit = useCallback((newCargo: Cargo) => {
     setCargos((prev) => [newCargo, ...prev])
+    saveCargoDB(newCargo)
     showToast("Kargo başarıyla eklendi")
-  }, [showToast])
+  }, [showToast, saveCargoDB])
 
   const handleCustomerSavedFromForm = useCallback((customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => {
     setSavedCustomers((prev) => {
@@ -160,44 +199,41 @@ export default function Page() {
     (cargoId: string, data: { firma: string; kalkisSaati: string; varisSaati: string; plaka: string; aracTelefon: string }) => {
       const now = new Date()
       const dateStr = now.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
-      setCargos((prev) =>
-        prev.map((c) =>
-          c.id === cargoId
-            ? {
-                ...c,
-                status: "giden" as const,
-                departureTime: data.kalkisSaati,
-                departureDate: dateStr,
-                arrivalTime: data.varisSaati,
-                arrivalDate: dateStr,
-                plate: data.plaka,
-                firma: data.firma,
-                aracTelefon: data.aracTelefon,
-              }
-            : c
-        )
-      )
+      const updates = {
+        status: "giden" as const,
+        departureTime: data.kalkisSaati,
+        departureDate: dateStr,
+        arrivalTime: data.varisSaati,
+        arrivalDate: dateStr,
+        plate: data.plaka,
+        firma: data.firma,
+        aracTelefon: data.aracTelefon,
+      }
+      setCargos((prev) => prev.map((c) => c.id === cargoId ? { ...c, ...updates } : c))
+      updateCargoDB(cargoId, updates)
       setLoadingCargo(null)
       showToast("Kargo yüklendi")
     },
-    [showToast]
+    [showToast, updateCargoDB]
   )
 
   const handleEditSubmit = useCallback(
     (cargoId: string, data: Partial<Cargo>) => {
       setCargos((prev) => prev.map((c) => (c.id === cargoId ? { ...c, ...data } : c)))
+      updateCargoDB(cargoId, data)
       setEditingCargo(null)
       showToast("Kargo bilgileri güncellendi")
     },
-    [showToast]
+    [showToast, updateCargoDB]
   )
 
   const handleCancelCargo = useCallback(
     (cargoId: string) => {
       setCargos((prev) => prev.map((c) => (c.id === cargoId ? { ...c, status: "iptal" as const } : c)))
+      updateCargoDB(cargoId, { status: "iptal" })
       showToast("Kargo iptal edildi")
     },
-    [showToast]
+    [showToast, updateCargoDB]
   )
 
   // Login screens
@@ -229,10 +265,8 @@ export default function Page() {
         onLogout={handleLogout}
       />
 
-      {/* Ana Sayfa */}
       {activePage === "anasayfa" && <AnaSayfa cargos={cargos} kasaTutari={kasaTutari} />}
 
-      {/* Kargolar */}
       {activePage === "kargolar" && (
         <>
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-card px-4 py-3">
@@ -260,11 +294,11 @@ export default function Page() {
             onEditCargo={setEditingCargo}
             onToast={(msg) => showToast(msg)}
             kullaniciSube={kullanici?.sube}
+            subeAyarlar={subeAyarlar}
           />
         </>
       )}
 
-      {/* Müşteriler */}
       {activePage === "musteriler" && (
         <Musteriler
           customers={savedCustomers}
@@ -273,16 +307,16 @@ export default function Page() {
         />
       )}
 
-      {/* Kasa İşlemleri */}
       {activePage === "kasaislemleri" && <KasaIslemleri cargos={cargos} kullaniciSube={kullanici?.sube} />}
-
-      {/* Raporlar */}
       {activePage === "raporlar" && <Raporlar cargos={cargos} />}
+      {activePage === "ayarlar" && (
+        <Ayarlar
+          onToast={(msg) => showToast(msg)}
+          kullaniciSube={kullanici?.sube}
+          onAyarlarSaved={(a) => setSubeAyarlar(a)}
+        />
+      )}
 
-      {/* Ayarlar */}
-      {activePage === "ayarlar" && <Ayarlar onToast={(msg) => showToast(msg)} />}
-
-      {/* Modals */}
       {showNewCargoForm && (
         <NewCargoForm
           onClose={() => setShowNewCargoForm(false)}

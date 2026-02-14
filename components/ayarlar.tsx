@@ -14,6 +14,7 @@ import {
 interface AyarlarProps {
   onToast?: (message: string) => void
   kullaniciSube?: string
+  onAyarlarSaved?: (ayarlar: { peron_no?: string; sirket_telefon?: string }) => void
 }
 
 interface DetectedPort {
@@ -22,7 +23,7 @@ interface DetectedPort {
   productId?: string
 }
 
-export function Ayarlar({ onToast, kullaniciSube }: AyarlarProps) {
+export function Ayarlar({ onToast, kullaniciSube, onAyarlarSaved }: AyarlarProps) {
   // Şube Bilgileri
   const [peronNo, setPeronNo] = useState("")
   const [sirketTelefon, setSirketTelefon] = useState("")
@@ -120,6 +121,7 @@ export function Ayarlar({ onToast, kullaniciSube }: AyarlarProps) {
       if (res.ok) {
         setSaved(true)
         onToast?.("Ayarlar veritabanına kaydedildi")
+        onAyarlarSaved?.({ peron_no: peronNo, sirket_telefon: sirketTelefon })
         setTimeout(() => setSaved(false), 2000)
       } else {
         onToast?.("Kaydetme başarısız oldu")
