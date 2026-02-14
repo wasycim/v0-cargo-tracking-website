@@ -151,9 +151,33 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   const discountAmount = (priceNum * discountPercent) / 100
   const toplamTutar = Math.max(priceNum - discountAmount, 0)
 
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
   const handleSubmitCargo = () => {
-    if (!senderAd || !receiverAd) {
-      alert("Gonderici ve Alici bilgilerini doldurun")
+    if (!senderAd || !senderSoyad) {
+      alert("Gonderici Ad ve Soyad alanlarini doldurun")
+      return
+    }
+    if (!senderTelefon || !validatePhone(senderTelefon)) {
+      alert("Gecerli bir gonderici telefon numarasi girin")
+      return
+    }
+    if (senderEmail && !validateEmail(senderEmail)) {
+      alert("Gecerli bir e-posta adresi girin (ornek: ad@domain.com)")
+      return
+    }
+    if (!isCodeVerified) {
+      alert("Kargo eklemeden once dogrulama kodunu gonderin ve onaylayin")
+      return
+    }
+    if (!receiverAd) {
+      alert("Alici bilgilerini doldurun")
+      return
+    }
+    if (!receiverSube) {
+      alert("Alici sube / il / ilce secimi yapin")
       return
     }
 

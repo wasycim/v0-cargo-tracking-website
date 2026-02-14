@@ -22,7 +22,11 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
   const [toCity, setToCity] = useState(cargo.toCity)
   const [pieces, setPieces] = useState(String(cargo.pieces))
   const [amount, setAmount] = useState(String(cargo.amount))
+
+  // Vehicle / Bus info
   const [plate, setPlate] = useState(cargo.plate || "")
+  const [firma, setFirma] = useState(cargo.firma || "")
+  const [aracTelefon, setAracTelefon] = useState(cargo.aracTelefon || "")
   const [departureTime, setDepartureTime] = useState(cargo.departureTime || "")
   const [arrivalTime, setArrivalTime] = useState(cargo.arrivalTime || "")
 
@@ -45,6 +49,8 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
       pieces: Number(pieces) || 1,
       amount: Number(amount) || 0,
       plate,
+      firma,
+      aracTelefon,
       departureTime,
       arrivalTime,
     })
@@ -68,14 +74,8 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
         }`}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            Kargo Duzenle - {cargo.trackingNo}
-          </h3>
-          <button
-            onClick={handleClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            aria-label="Kapat"
-          >
+          <h3 className="text-sm font-semibold text-foreground">Yeni Kargo Bilgileri - {cargo.trackingNo}</h3>
+          <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Kapat">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -83,22 +83,12 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
         <div className="max-h-[75vh] overflow-y-auto p-5">
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Gonderici</label>
-            <Input
-              placeholder="Gonderici adi"
-              value={sender}
-              onChange={(e) => setSender(e.target.value)}
-              className="border-border bg-background"
-            />
+            <Input placeholder="Gonderici adi" value={sender} onChange={(e) => setSender(e.target.value)} className="border-border bg-background" />
           </div>
 
           <div className="mb-3">
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Alici</label>
-            <Input
-              placeholder="Alici adi"
-              value={receiver}
-              onChange={(e) => setReceiver(e.target.value)}
-              className="border-border bg-background"
-            />
+            <Input placeholder="Alici adi" value={receiver} onChange={(e) => setReceiver(e.target.value)} className="border-border bg-background" />
           </div>
 
           <div className="mb-3">
@@ -116,23 +106,11 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
           <div className="mb-3 flex gap-3">
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Parca Sayisi</label>
-              <Input
-                type="number"
-                min={1}
-                value={pieces}
-                onChange={(e) => setPieces(e.target.value)}
-                className="border-border bg-background"
-              />
+              <Input type="number" min={1} value={pieces} onChange={(e) => setPieces(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Tutar (TL)</label>
-              <Input
-                type="number"
-                min={0}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="border-border bg-background"
-              />
+              <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
 
@@ -141,41 +119,34 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
             <h4 className="mb-3 text-xs font-semibold text-muted-foreground">Otobus / Arac Bilgileri</h4>
 
             <div className="mb-3">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Plaka</label>
-              <Input
-                placeholder="Arac plakasi"
-                value={plate}
-                onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                className="border-border bg-background"
-              />
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Firma</label>
+              <Input placeholder="Tasima firmasi" value={firma} onChange={(e) => setFirma(e.target.value)} className="border-border bg-background" />
+            </div>
+
+            <div className="mb-3 flex gap-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Plaka</label>
+                <Input placeholder="Arac plakasi" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} className="border-border bg-background" />
+              </div>
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Arac Telefon</label>
+                <Input placeholder="5XX XXX XX XX" value={aracTelefon} onChange={(e) => setAracTelefon(e.target.value.replace(/\D/g, "").slice(0, 10))} className="border-border bg-background" maxLength={10} />
+              </div>
             </div>
 
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkis Saati</label>
-                <Input
-                  type="time"
-                  value={departureTime}
-                  onChange={(e) => setDepartureTime(e.target.value)}
-                  className="border-border bg-background"
-                />
+                <Input type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} className="border-border bg-background" />
               </div>
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Saati</label>
-                <Input
-                  type="time"
-                  value={arrivalTime}
-                  onChange={(e) => setArrivalTime(e.target.value)}
-                  className="border-border bg-background"
-                />
+                <Input type="time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} className="border-border bg-background" />
               </div>
             </div>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-cargo-green py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cargo-dark"
-          >
+          <button onClick={handleSubmit} className="flex w-full items-center justify-center gap-2 rounded-md bg-cargo-green py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cargo-dark">
             <Save className="h-4 w-4" />
             Kaydet
           </button>

@@ -1,10 +1,10 @@
 "use client"
 
-import { Sun, Moon } from "lucide-react"
+import { Sun, Moon, Settings } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 
-export type AppPage = "anasayfa" | "kargolar" | "musteriler" | "kasaislemleri" | "raporlar"
+export type AppPage = "anasayfa" | "kargolar" | "musteriler" | "kasaislemleri" | "raporlar" | "ayarlar"
 
 const navItems: { label: string; id: AppPage }[] = [
   { label: "Ana Sayfa", id: "anasayfa" },
@@ -44,16 +44,30 @@ export function Navigation({ activePage, onPageChange }: NavigationProps) {
           </button>
         ))}
       </div>
-      {mounted && (
+      <div className="flex items-center gap-2">
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted"
-          aria-label="Tema degistir"
+          onClick={() => onPageChange("ayarlar")}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            activePage === "ayarlar"
+              ? "bg-cargo-green/10 text-cargo-green"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+          aria-label="Ayarlar"
         >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+          <Settings className="h-4 w-4" />
+          <span className="hidden sm:inline">Ayarlar</span>
         </button>
-      )}
+        {mounted && (
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-foreground transition-colors hover:bg-muted"
+            aria-label="Tema degistir"
+          >
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+          </button>
+        )}
+      </div>
     </nav>
   )
 }

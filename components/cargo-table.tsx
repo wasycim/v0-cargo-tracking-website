@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu, RefreshCw, Pencil, Copy, Check } from "lucide-react"
+import { Menu, RefreshCw, Pencil, Copy, Check, Barcode } from "lucide-react"
 import type { Cargo } from "@/lib/cargo-data"
 import { statusColors, statusLabels } from "@/lib/cargo-data"
 import {
@@ -48,7 +48,6 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
       onToast?.(`Takip No kopyalandi: ${trackingNo}`)
       setTimeout(() => setCopiedId(null), 2000)
     } catch {
-      // fallback
       const el = document.createElement("textarea")
       el.value = trackingNo.replace(/\s/g, "")
       document.body.appendChild(el)
@@ -58,6 +57,44 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
       setCopiedId(cargoId)
       onToast?.(`Takip No kopyalandi: ${trackingNo}`)
       setTimeout(() => setCopiedId(null), 2000)
+    }
+  }, [onToast])
+
+  const handlePrintBarcode = useCallback((cargo: Cargo) => {
+    onToast?.("Barkod yazdiriliyor")
+
+    // Create a printable barcode window
+    const printWindow = window.open("", "_blank", "width=400,height=300")
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>Barkod - ${cargo.trackingNo}</title>
+            <style>
+              body { font-family: monospace; text-align: center; padding: 20px; }
+              .barcode { font-size: 48px; letter-spacing: 4px; font-weight: bold; margin: 20px 0; }
+              .info { font-size: 14px; margin: 4px 0; }
+              .tracking { font-size: 20px; font-weight: bold; margin: 10px 0; }
+              .lines { display: flex; justify-content: center; gap: 2px; margin: 15px 0; }
+              .lines span { display: block; background: #000; height: 60px; }
+            </style>
+          </head>
+          <body>
+            <div class="tracking">${cargo.trackingNo}</div>
+            <div class="lines">
+              ${cargo.trackingNo.replace(/\s/g, "").split("").map((d) => {
+                const w = (parseInt(d) || 1) + 1
+                return `<span style="width:${w}px"></span><span style="width:1px; background:#fff"></span>`
+              }).join("")}
+            </div>
+            <div class="info"><strong>Gonderici:</strong> ${cargo.sender}</div>
+            <div class="info"><strong>Alici:</strong> ${cargo.receiver}</div>
+            <div class="info"><strong>Nereye:</strong> ${cargo.to}</div>
+            <div class="info"><strong>Tutar:</strong> ${cargo.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</div>
+            <script>window.onload = function() { window.print(); }</script>
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
     }
   }, [onToast])
 
@@ -76,7 +113,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-[120px] text-center font-semibold text-foreground">Kargo Durum</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
+              <TableHead className="w-[80px]"></TableHead>
               <TableHead className="font-semibold text-foreground">Takip No</TableHead>
               <TableHead className="w-[60px] text-center font-semibold text-foreground">Parca</TableHead>
               <TableHead className="font-semibold text-foreground">Gonderici</TableHead>
@@ -107,7 +144,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                     <StatusBadge status={cargo.status} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       {cargo.status === "yuklenecek" ? (
                         <button
                           onClick={() => onLoadCargo?.(cargo.id, cargo.trackingNo)}
@@ -127,6 +164,14 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoT
                         title="Kargo Bilgileri Duzenle"
                       >
                         <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handlePrintBarcode(cargo)}
+                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400"
+                        aria-label="Barkod yazdir"
+                        title="Barkod Yazdir"
+                      >
+                        <Barcode className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </TableCell>

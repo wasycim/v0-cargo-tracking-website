@@ -17,6 +17,8 @@ export interface Cargo {
   arrivalDate: string
   arrivalTime: string
   plate: string
+  firma?: string
+  aracTelefon?: string
   createdAt?: string
 }
 

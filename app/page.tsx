@@ -18,6 +18,7 @@ import { Musteriler } from "@/components/musteriler"
 import type { SavedCustomer } from "@/components/musteriler"
 import { KasaIslemleri } from "@/components/kasa-islemleri"
 import { Raporlar } from "@/components/raporlar"
+import { Ayarlar } from "@/components/ayarlar"
 import { ToastNotification } from "@/components/toast-notification"
 import { mockCargos } from "@/lib/cargo-data"
 import type { Cargo } from "@/lib/cargo-data"
@@ -145,6 +146,8 @@ export default function Page() {
                 arrivalTime: data.varisSaati,
                 arrivalDate: dateStr,
                 plate: data.plaka,
+                firma: data.firma,
+                aracTelefon: data.aracTelefon,
               }
             : c
         )
@@ -242,6 +245,9 @@ export default function Page() {
 
       {/* Raporlar */}
       {activePage === "raporlar" && <Raporlar cargos={cargos} />}
+
+      {/* Ayarlar */}
+      {activePage === "ayarlar" && <Ayarlar onToast={(msg) => showToast(msg)} />}
 
       {/* Modals */}
       {showNewCargoForm && (
