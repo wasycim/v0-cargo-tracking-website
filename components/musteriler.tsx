@@ -444,7 +444,7 @@ function MusteriDuzenleModal({ onClose, customers, onUpdate, onToast }: {
 }
 
 /* ---- ANA M\u00dc\u015eTER\u0130LER SAYFASI ---- */
-export function Musteriler({ customers, onCustomerSaved, onCustomerUpdated, onToast }: MusterilerProps) {
+export function Musteriler({ customers, onCustomerSaved, onCustomerUpdated, kullaniciSube, onToast }: MusterilerProps) {
   const [showEkle, setShowEkle] = useState(false)
   const [showAra, setShowAra] = useState(false)
   const [showDuzenle, setShowDuzenle] = useState(false)
