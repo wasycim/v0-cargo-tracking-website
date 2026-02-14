@@ -75,11 +75,11 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
         <div className="p-5">
           <div className="mb-4 flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Başlangıç Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitiş Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
@@ -100,7 +100,7 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Arama: Tum Metin Sutunlari"
+            placeholder="Arama: Tüm Metin Sütunları"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className="h-8 w-48 border-border bg-background text-xs"
@@ -114,8 +114,8 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
               <TableRow className="bg-muted/50">
                 <TableHead className="font-semibold text-foreground">Takip No</TableHead>
                 <TableHead className="font-semibold text-foreground">Tarih</TableHead>
-                <TableHead className="font-semibold text-foreground">Gonderici</TableHead>
-                <TableHead className="font-semibold text-foreground">Alici</TableHead>
+                <TableHead className="font-semibold text-foreground">Gönderici</TableHead>
+                <TableHead className="font-semibold text-foreground">Alıcı</TableHead>
                 <TableHead className="font-semibold text-foreground">Nereden</TableHead>
                 <TableHead className="font-semibold text-foreground">Nereye</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Tutar</TableHead>
@@ -125,7 +125,7 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
               {iptalCargos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                    Secilen tarih araliginda iptal kargo bulunamadi.
+                    Seçilen tarih aralığında iptal kargo bulunamadı.
                   </TableCell>
                 </TableRow>
               ) : (

@@ -12,8 +12,8 @@ interface RaporlarProps {
 
 const tabs = [
   { id: "kargo", label: "Kargo Raporu" },
-  { id: "ciro", label: "Sube Ciro Raporu" },
-  { id: "iade", label: "Iade Kargolar" },
+  { id: "ciro", label: "Şube Ciro Raporu" },
+  { id: "iade", label: "İade Kargolar" },
 ]
 
 export function Raporlar({ cargos }: RaporlarProps) {

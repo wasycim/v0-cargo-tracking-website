@@ -18,9 +18,9 @@ interface SubeCiroRaporuProps {
 }
 
 const subeTabs = [
-  { id: "gonderici", label: "Gonderici Sube" },
-  { id: "alici", label: "Alici Sube" },
-  { id: "gunluk", label: "Gunluk Toplam" },
+  { id: "gonderici", label: "Gönderici Şube" },
+  { id: "alici", label: "Alıcı Şube" },
+  { id: "gunluk", label: "Günlük Toplam" },
 ]
 
 function parseDDMMYYYY(dateStr: string): Date | null {
@@ -116,11 +116,11 @@ export function SubeCiroRaporu({ cargos }: SubeCiroRaporuProps) {
         <div className="p-5">
           <div className="flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Baslangic Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Başlangıç Tarihi</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Bitis Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">Bitiş Tarihi</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
@@ -168,8 +168,8 @@ export function SubeCiroRaporu({ cargos }: SubeCiroRaporuProps) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold text-foreground">{activeTab === "gunluk" ? "Tarih" : "Sube"}</TableHead>
-                <TableHead className="text-right font-semibold text-foreground">Irsaliye Adet</TableHead>
+                <TableHead className="font-semibold text-foreground">{activeTab === "gunluk" ? "Tarih" : "Şube"}</TableHead>
+                <TableHead className="text-right font-semibold text-foreground">İrsaliye Adet</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Kargo Adet</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Toplam Tutar</TableHead>
               </TableRow>
@@ -178,7 +178,7 @@ export function SubeCiroRaporu({ cargos }: SubeCiroRaporuProps) {
               {ciroData.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
-                    Secilen tarih araliginda kayit bulunamadi.
+                    Seçilen tarih aralığında kayıt bulunamadı.
                   </TableCell>
                 </TableRow>
               ) : (

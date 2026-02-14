@@ -19,7 +19,7 @@ interface MusterilerProps {
   onToast: (message: string) => void
 }
 
-/* ---- MUSTERI EKLE MODAL ---- */
+/* ---- MÜŞTERİ EKLE MODAL ---- */
 function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c: SavedCustomer) => void }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
@@ -54,14 +54,14 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
   const handleSendCode = () => {
     setPhoneError("")
     if (!validatePhone(telefon)) {
-      setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
+      setPhoneError("Geçerli bir telefon numarası girin (5XX XXX XX XX)")
       return
     }
     const code = String(Math.floor(1000 + Math.random() * 9000))
     setSentCode(code)
     setIsCodeSent(true)
     setCodeError("")
-    alert(`Dogrulama kodu gonderildi: ${code}`)
+    alert(`Doğrulama kodu gönderildi: ${code}`)
   }
 
   const handleVerifyCode = () => {
@@ -69,18 +69,18 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
       setIsCodeVerified(true)
       setCodeError("")
     } else {
-      setCodeError("Kod hatali, tekrar deneyin")
+      setCodeError("Kod hatalı, tekrar deneyin")
       setIsCodeVerified(false)
     }
   }
 
   const handleSave = () => {
     if (!tc || !ad || !soyad || !telefon) {
-      alert("Lutfen TC, Ad, Soyad ve Telefon alanlarini doldurun")
+      alert("Lütfen TC, Ad, Soyad ve Telefon alanlarını doldurun")
       return
     }
     if (!validatePhone(telefon)) {
-      setPhoneError("Gecerli bir telefon numarasi girin")
+      setPhoneError("Geçerli bir telefon numarası girin")
       return
     }
     onSave({ tc, ad, soyad, telefon, email: email || undefined, durum })
@@ -100,7 +100,7 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
         }`}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Musteri Ekle</h3>
+          <h3 className="text-sm font-semibold text-foreground">Müşteri Ekle</h3>
           <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="Kapat">
             <X className="h-4 w-4" />
           </button>
@@ -108,13 +108,13 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
         <div className="p-5">
           <div className="mb-4">
             <label className="mb-2 block text-xs font-medium text-muted-foreground">
-              {"Musteri Tipi"} <span className="text-destructive">*</span>
+              {"Müşteri Tipi"} <span className="text-destructive">*</span>
             </label>
-            <span className="inline-block rounded-md bg-cargo-dark px-5 py-2 text-xs font-medium text-white">Gercek Kisi</span>
+            <span className="inline-block rounded-md bg-cargo-dark px-5 py-2 text-xs font-medium text-white">Gerçek Kişi</span>
           </div>
 
           <div className="mb-3">
-            <Input placeholder="TC Kimlik Numarasi" value={tc} onChange={(e) => setTc(e.target.value.replace(/\D/g, "").slice(0, 11))} className="border-border bg-background" maxLength={11} />
+            <Input placeholder="TC Kimlik Numarası" value={tc} onChange={(e) => setTc(e.target.value.replace(/\D/g, "").slice(0, 11))} className="border-border bg-background" maxLength={11} />
           </div>
           <div className="mb-3 flex gap-3">
             <Input placeholder="Ad" value={ad} onChange={(e) => setAd(e.target.value)} className="border-border bg-background" />
@@ -128,7 +128,7 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
               className={`border-border bg-background ${phoneError ? "border-destructive" : ""}`}
               maxLength={10}
             />
-            <Input placeholder="Mail Adresi" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-border bg-background" />
+            <Input placeholder="E-Posta Adresi" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-border bg-background" />
           </div>
           {phoneError && (
             <p className="mb-2 flex items-center gap-1 text-xs text-destructive"><AlertCircle className="h-3 w-3" />{phoneError}</p>
@@ -137,10 +137,10 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
           <div className="mb-3 flex items-center gap-2">
             <button onClick={handleSendCode} className="flex items-center gap-2 whitespace-nowrap rounded-md bg-cargo-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-green">
               <Send className="h-3.5 w-3.5" />
-              Dogrulama Kodu Gonder
+              Doğrulama Kodu Gönder
             </button>
             <Input
-              placeholder="Dogrulama Kodu"
+              placeholder="Doğrulama Kodu"
               value={dogrulamaKodu}
               onChange={(e) => { setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 4)); setCodeError("") }}
               disabled={!isCodeSent}
@@ -163,7 +163,7 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
             )}
           </div>
           {isCodeVerified && (
-            <p className="mb-3 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><Check className="h-3 w-3" />Kod basariyla dogrulandi</p>
+            <p className="mb-3 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><Check className="h-3 w-3" />Kod başarıyla doğrulandı</p>
           )}
           {codeError && (
             <p className="mb-3 flex items-center gap-1 text-xs text-destructive"><AlertCircle className="h-3 w-3" />{codeError}</p>
@@ -185,15 +185,15 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
         </div>
 
         <div className="flex items-center justify-between border-t border-border px-5 py-3">
-          <button onClick={handleClose} className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">Iptal</button>
-          <button onClick={handleSave} className="rounded-md bg-cargo-green px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-cargo-dark">Olustur</button>
+          <button onClick={handleClose} className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">İptal</button>
+          <button onClick={handleSave} className="rounded-md bg-cargo-green px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-cargo-dark">Oluştur</button>
         </div>
       </div>
     </div>
   )
 }
 
-/* ---- MUSTERI ARA MODAL ---- */
+/* ---- MÜŞTERİ ARA MODAL ---- */
 function MusteriAraModal({ onClose, customers }: { onClose: () => void; customers: SavedCustomer[] }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
@@ -235,7 +235,7 @@ function MusteriAraModal({ onClose, customers }: { onClose: () => void; customer
         }`}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Musteri</h3>
+          <h3 className="text-sm font-semibold text-foreground">Müşteri Ara</h3>
           <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="Kapat">
             <X className="h-4 w-4" />
           </button>
@@ -251,7 +251,7 @@ function MusteriAraModal({ onClose, customers }: { onClose: () => void; customer
           </button>
 
           {searched && results.length === 0 && (
-            <div className="rounded-lg border border-border bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground">Musteri bulunamadi.</div>
+            <div className="rounded-lg border border-border bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground">Müşteri bulunamadı.</div>
           )}
 
           {results.length > 0 && (
@@ -271,34 +271,34 @@ function MusteriAraModal({ onClose, customers }: { onClose: () => void; customer
           )}
         </div>
         <div className="border-t border-border px-5 py-3">
-          <button onClick={handleClose} className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">Iptal</button>
+          <button onClick={handleClose} className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted">İptal</button>
         </div>
       </div>
     </div>
   )
 }
 
-/* ---- MAIN MUSTERILER PAGE ---- */
+/* ---- ANA MÜŞTERİLER SAYFASI ---- */
 export function Musteriler({ customers, onCustomerSaved, onToast }: MusterilerProps) {
   const [showEkle, setShowEkle] = useState(false)
   const [showAra, setShowAra] = useState(false)
 
   const handleSave = (c: SavedCustomer) => {
     onCustomerSaved(c)
-    onToast("Musteri eklendi")
+    onToast("Müşteri eklendi")
   }
 
   return (
     <div className="p-4">
-      <h1 className="mb-6 text-xl font-bold text-foreground">Musteriler</h1>
+      <h1 className="mb-6 text-xl font-bold text-foreground">Müşteriler</h1>
       <div className="flex flex-wrap gap-4">
         <button onClick={() => setShowAra(true)} className="rounded-lg border border-border bg-card px-10 py-4 text-sm font-medium text-foreground transition-all hover:border-cargo-green hover:shadow-md">
           <Search className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
-          Musteri Ara
+          Müşteri Ara
         </button>
         <button onClick={() => setShowEkle(true)} className="rounded-lg border border-border bg-card px-10 py-4 text-sm font-medium text-foreground transition-all hover:border-cargo-green hover:shadow-md">
           <UserPlus className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
-          Musteri Ekle
+          Müşteri Ekle
         </button>
       </div>
 

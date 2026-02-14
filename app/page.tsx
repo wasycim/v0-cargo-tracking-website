@@ -274,7 +274,7 @@ export default function Page() {
       )}
 
       {/* Kasa İşlemleri */}
-      {activePage === "kasaislemleri" && <KasaIslemleri cargos={cargos} />}
+      {activePage === "kasaislemleri" && <KasaIslemleri cargos={cargos} kullaniciSube={kullanici?.sube} />}
 
       {/* Raporlar */}
       {activePage === "raporlar" && <Raporlar cargos={cargos} />}

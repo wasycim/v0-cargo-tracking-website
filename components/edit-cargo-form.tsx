@@ -23,7 +23,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
   const [pieces, setPieces] = useState(String(cargo.pieces))
   const [amount, setAmount] = useState(String(cargo.amount))
 
-  // Vehicle / Bus info
+  // Otobüs / Araç bilgileri
   const [plate, setPlate] = useState(cargo.plate || "")
   const [firma, setFirma] = useState(cargo.firma || "")
   const [aracTelefon, setAracTelefon] = useState(cargo.aracTelefon || "")
@@ -74,7 +74,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
         }`}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Yeni Kargo Bilgileri - {cargo.trackingNo}</h3>
+          <h3 className="text-sm font-semibold text-foreground">Kargo Bilgileri Düzenle - {cargo.trackingNo}</h3>
           <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Kapat">
             <X className="h-4 w-4" />
           </button>
@@ -82,17 +82,17 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
 
         <div className="max-h-[75vh] overflow-y-auto p-5">
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Gonderici</label>
-            <Input placeholder="Gonderici adi" value={sender} onChange={(e) => setSender(e.target.value)} className="border-border bg-background" />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Gönderici</label>
+            <Input placeholder="Gönderici adı" value={sender} onChange={(e) => setSender(e.target.value)} className="border-border bg-background" />
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Alici</label>
-            <Input placeholder="Alici adi" value={receiver} onChange={(e) => setReceiver(e.target.value)} className="border-border bg-background" />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Alıcı</label>
+            <Input placeholder="Alıcı adı" value={receiver} onChange={(e) => setReceiver(e.target.value)} className="border-border bg-background" />
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Yeri (Il / Ilce)</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Varış Yeri (İl / İlçe)</label>
             <CityPicker
               value={to}
               onChange={(val) => {
@@ -105,7 +105,7 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
 
           <div className="mb-3 flex gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Parca Sayisi</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Parça Sayısı</label>
               <Input type="number" min={1} value={pieces} onChange={(e) => setPieces(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="flex-1">
@@ -114,33 +114,33 @@ export function EditCargoForm({ cargo, onClose, onSubmit }: EditCargoFormProps) 
             </div>
           </div>
 
-          {/* Otobus / Arac Bilgileri */}
+          {/* Otobüs / Araç Bilgileri */}
           <div className="mb-3 rounded-lg border border-border bg-muted/30 p-3">
-            <h4 className="mb-3 text-xs font-semibold text-muted-foreground">Otobus / Arac Bilgileri</h4>
+            <h4 className="mb-3 text-xs font-semibold text-muted-foreground">Otobüs / Araç Bilgileri</h4>
 
             <div className="mb-3">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Firma</label>
-              <Input placeholder="Tasima firmasi" value={firma} onChange={(e) => setFirma(e.target.value)} className="border-border bg-background" />
+              <Input placeholder="Taşıma firması" value={firma} onChange={(e) => setFirma(e.target.value)} className="border-border bg-background" />
             </div>
 
             <div className="mb-3 flex gap-3">
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Plaka</label>
-                <Input placeholder="Arac plakasi" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} className="border-border bg-background" />
+                <Input placeholder="Araç plakası" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} className="border-border bg-background" />
               </div>
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Arac Telefon</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Araç Telefon</label>
                 <Input placeholder="5XX XXX XX XX" value={aracTelefon} onChange={(e) => setAracTelefon(e.target.value.replace(/\D/g, "").slice(0, 10))} className="border-border bg-background" maxLength={10} />
               </div>
             </div>
 
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkis Saati</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Kalkış Saati</label>
                 <Input type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} className="border-border bg-background" />
               </div>
               <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Varis Saati</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Varış Saati</label>
                 <Input type="time" value={arrivalTime} onChange={(e) => setArrivalTime(e.target.value)} className="border-border bg-background" />
               </div>
             </div>
