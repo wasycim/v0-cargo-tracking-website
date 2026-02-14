@@ -76,7 +76,8 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
   }, [onToast])
 
   const handlePrintBarcode = useCallback((cargo: Cargo) => {
-    onToast?.("Barkod yazd\u0131r\u0131l\u0131yor")
+    const totalPieces = cargo.pieces || 1
+    onToast?.(totalPieces + " adet barkod yazd\u0131r\u0131l\u0131yor...")
 
     const destCity = cargo.toCity || cargo.to.split("/").pop()?.trim() || "---"
     const fromCity = kullaniciSube || cargo.fromCity || "Gebze"
@@ -92,18 +93,65 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
     if (subeAyarlar?.sirket_telefon) footerParts.push(subeAyarlar.sirket_telefon)
     const footerText = footerParts.join(" / ")
 
+    // Her parca icin ayri sayfa olustur
+    const pages: string[] = []
+    for (let i = totalPieces; i >= 1; i--) {
+      const parcaLabel = i + "/" + totalPieces
+      pages.push([
+        '<div class="page">',
+        '<div class="header">',
+        '  <div>',
+        '    <div class="dest-city">' + destCity.toUpperCase() + '</div>',
+        '    <div class="from-city">' + fromCity.toUpperCase() + '</div>',
+        '  </div>',
+        '  <div style="text-align:right">',
+        '    <div class="gonderim-kodu">' + gonderimKodu + '</div>',
+        '    <div class="tracking-no">' + cargo.trackingNo + '</div>',
+        '    <div class="parca-label">' + parcaLabel + '</div>',
+        '  </div>',
+        '</div>',
+        '<div class="hat-name">' + hatName + '</div>',
+        '<table class="info-table">',
+        '  <tr>',
+        '    <td colspan="2" class="section-header">G\u00f6nderici Bilgileri</td>',
+        '    <td class="label">Tarih</td>',
+        '    <td>' + today + '</td>',
+        '  </tr>',
+        '  <tr>',
+        '    <td colspan="2" rowspan="2" class="sender-info">' + cargo.sender + '<br>' + senderPhone + '<br>' + (cargo.from || '') + '</td>',
+        '    <td class="label">T\u00fcr\u00fc</td>',
+        '    <td>Paket</td>',
+        '  </tr>',
+        '  <tr>',
+        '    <td class="label">Par\u00e7a</td>',
+        '    <td style="font-weight:bold;font-size:9pt">' + parcaLabel + '</td>',
+        '  </tr>',
+        '  <tr>',
+        '    <td colspan="4" class="section-header">Al\u0131c\u0131 Bilgileri</td>',
+        '  </tr>',
+        '  <tr>',
+        '    <td colspan="4" class="sender-info">' + cargo.receiver + '<br>' + receiverPhone + '<br>' + (cargo.to || '') + '</td>',
+        '  </tr>',
+        '</table>',
+        '<div class="footer">' + footerText + '</div>',
+        '</div>'
+      ].join('\n'))
+    }
+
     const html = [
       '<!DOCTYPE html><html><head><meta charset="utf-8">',
-      '<title>Barkod - ' + cargo.trackingNo + '</title>',
+      '<title>Barkod - ' + cargo.trackingNo + ' (' + totalPieces + ' adet)</title>',
       '<style>',
       '@page { margin: 0; size: 100mm 70mm; }',
       '* { margin: 0; padding: 0; box-sizing: border-box; }',
-      'body { font-family: Arial, Helvetica, sans-serif; width: 100mm; height: 70mm; padding: 2.5mm; overflow: hidden; }',
+      '.page { width: 100mm; height: 70mm; padding: 2.5mm; overflow: hidden; page-break-after: always; font-family: Arial, Helvetica, sans-serif; }',
+      '.page:last-child { page-break-after: avoid; }',
       '.header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5mm; }',
       '.dest-city { font-size: 20pt; font-weight: bold; letter-spacing: 0.5px; line-height: 1.1; }',
       '.gonderim-kodu { font-size: 9pt; font-weight: bold; text-align: right; }',
       '.from-city { font-size: 10pt; margin-bottom: 0.3mm; }',
       '.tracking-no { font-size: 13pt; font-weight: bold; text-align: right; letter-spacing: 1px; }',
+      '.parca-label { font-size: 14pt; font-weight: bold; text-align: right; margin-top: 0.5mm; }',
       '.hat-name { font-size: 10pt; font-weight: bold; margin-bottom: 1mm; }',
       '.info-table { width: 100%; border-collapse: collapse; margin-bottom: 1mm; font-size: 7pt; }',
       '.info-table td, .info-table th { border: 0.5px solid #000; padding: 1mm 1.5mm; vertical-align: top; }',
@@ -112,40 +160,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
       '.sender-info { line-height: 1.4; font-size: 7pt; }',
       '.footer { font-size: 6.5pt; text-align: center; margin-top: 1mm; border-top: 0.5px solid #000; padding-top: 0.8mm; }',
       '</style></head><body>',
-      '<div class="header">',
-      '  <div>',
-      '    <div class="dest-city">' + destCity.toUpperCase() + '</div>',
-      '    <div class="from-city">' + fromCity.toUpperCase() + '</div>',
-      '  </div>',
-      '  <div style="text-align:right">',
-      '    <div class="gonderim-kodu">' + gonderimKodu + '</div>',
-      '    <div class="tracking-no">' + cargo.trackingNo + '</div>',
-      '  </div>',
-      '</div>',
-      '<div class="hat-name">' + hatName + '</div>',
-      '<table class="info-table">',
-      '  <tr>',
-      '    <td colspan="2" class="section-header">G\u00f6nderici Bilgileri</td>',
-      '    <td class="label">Tarih</td>',
-      '    <td>' + today + '</td>',
-      '  </tr>',
-      '  <tr>',
-      '    <td colspan="2" rowspan="2" class="sender-info">' + cargo.sender + '<br>' + senderPhone + '<br>' + (cargo.from || '') + '</td>',
-      '    <td class="label">T\u00fcr\u00fc</td>',
-      '    <td>Paket</td>',
-      '  </tr>',
-      '  <tr>',
-      '    <td class="label">Adet</td>',
-      '    <td>' + cargo.pieces + '</td>',
-      '  </tr>',
-      '  <tr>',
-      '    <td colspan="4" class="section-header">Al\u0131c\u0131 Bilgileri</td>',
-      '  </tr>',
-      '  <tr>',
-      '    <td colspan="4" class="sender-info">' + cargo.receiver + '<br>' + receiverPhone + '<br>' + (cargo.to || '') + '</td>',
-      '  </tr>',
-      '</table>',
-      '<div class="footer">' + footerText + '</div>',
+      pages.join('\n'),
       '</body></html>'
     ].join('\n')
 

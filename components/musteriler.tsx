@@ -17,6 +17,7 @@ interface MusterilerProps {
   customers: SavedCustomer[]
   onCustomerSaved: (customer: SavedCustomer) => void
   onCustomerUpdated?: (tc: string, updated: SavedCustomer) => void
+  kullaniciSube?: string
   onToast: (message: string) => void
 }
 

@@ -85,6 +85,28 @@ export default function Page() {
     loadCargos()
   }, [isLoggedIn, kullanici?.sube])
 
+  // Load customers from DB
+  useEffect(() => {
+    if (!isLoggedIn || !kullanici?.sube) return
+    const loadCustomers = async () => {
+      try {
+        const res = await fetch(`/api/musteriler?sube=${encodeURIComponent(kullanici.sube)}`)
+        const data = await res.json()
+        if (data.customers && data.customers.length > 0) {
+          setSavedCustomers(data.customers.map((c: { tc: string; ad: string; soyad: string; telefon: string; email?: string; durum?: string }) => ({
+            tc: c.tc,
+            ad: c.ad,
+            soyad: c.soyad,
+            telefon: c.telefon,
+            email: c.email,
+            durum: c.durum || "aktif",
+          })))
+        }
+      } catch { /* ignore */ }
+    }
+    loadCustomers()
+  }, [isLoggedIn, kullanici?.sube])
+
   // Load sube ayarlar
   useEffect(() => {
     if (!isLoggedIn || !kullanici?.sube) return
@@ -182,15 +204,40 @@ export default function Page() {
     }
   }, [showToast, saveCargoDB])
 
+  // Save customer to DB
+  const saveCustomerDB = useCallback(async (customer: SavedCustomer) => {
+    if (!kullanici?.sube) return
+    try {
+      await fetch("/api/musteriler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...customer, sube: kullanici.sube }),
+      })
+    } catch { /* ignore */ }
+  }, [kullanici])
+
+  // Update customer in DB
+  const updateCustomerDB = useCallback(async (tc: string, updates: Partial<SavedCustomer>) => {
+    if (!kullanici?.sube) return
+    try {
+      await fetch("/api/musteriler", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sube: kullanici.sube, tc, ...updates }),
+      })
+    } catch { /* ignore */ }
+  }, [kullanici])
+
   const handleCustomerSavedFromForm = useCallback((customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => {
+    const full: SavedCustomer = { ...customer, durum: "aktif" }
     setSavedCustomers((prev) => {
       const exists = prev.find((c) => c.tc === customer.tc)
-      const full: SavedCustomer = { ...customer, durum: "aktif" }
       if (exists) return prev.map((c) => (c.tc === customer.tc ? full : c))
       return [...prev, full]
     })
-    showToast("Müşteri eklendi")
-  }, [showToast])
+    saveCustomerDB(full)
+    showToast("M\u00fc\u015fteri eklendi")
+  }, [showToast, saveCustomerDB])
 
   const handleCustomerSavedFromPage = useCallback((customer: SavedCustomer) => {
     setSavedCustomers((prev) => {
@@ -198,7 +245,8 @@ export default function Page() {
       if (exists) return prev.map((c) => (c.tc === customer.tc ? customer : c))
       return [...prev, customer]
     })
-  }, [])
+    saveCustomerDB(customer)
+  }, [saveCustomerDB])
 
   const handleLoadCargo = useCallback((cargoId: string, trackingNo: string) => {
     setLoadingCargo({ id: cargoId, trackingNo })
@@ -314,7 +362,9 @@ export default function Page() {
           onCustomerSaved={handleCustomerSavedFromPage}
           onCustomerUpdated={(tc, updated) => {
             setSavedCustomers((prev) => prev.map((c) => c.tc === tc ? updated : c))
+            updateCustomerDB(tc, updated)
           }}
+          kullaniciSube={kullanici?.sube}
           onToast={(msg) => showToast(msg)}
         />
       )}
