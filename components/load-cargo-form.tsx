@@ -8,7 +8,7 @@ interface LoadCargoFormProps {
   cargoId: string
   trackingNo: string
   onClose: () => void
-  onSubmit: (cargoId: string, data: { firma: string; kalkisSaati: string; varisSaati: string; plaka: string }) => void
+  onSubmit: (cargoId: string, data: { firma: string; kalkisSaati: string; varisSaati: string; plaka: string; aracTelefon: string }) => void
 }
 
 export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCargoFormProps) {
@@ -19,6 +19,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
   const [kalkisSaati, setKalkisSaati] = useState("")
   const [varisSaati, setVarisSaati] = useState("")
   const [plaka, setPlaka] = useState("")
+  const [aracTelefon, setAracTelefon] = useState("")
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true))
@@ -35,7 +36,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
       alert("Lutfen tum alanlari doldurun")
       return
     }
-    onSubmit(cargoId, { firma, kalkisSaati, varisSaati, plaka })
+    onSubmit(cargoId, { firma, kalkisSaati, varisSaati, plaka, aracTelefon })
     handleClose()
   }
 
@@ -91,6 +92,17 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
               value={plaka}
               onChange={(e) => setPlaka(e.target.value.toUpperCase())}
               className="border-border bg-background"
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Arac Telefon</label>
+            <Input
+              placeholder="5XX XXX XX XX"
+              value={aracTelefon}
+              onChange={(e) => setAracTelefon(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              className="border-border bg-background"
+              maxLength={10}
             />
           </div>
 

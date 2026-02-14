@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, Send, Truck, UserPlus, Eraser, Check, AlertCircle } from "lucide-react"
+import { X, Send, Truck, UserPlus, Eraser, Check, AlertCircle, Percent } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -50,7 +50,7 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
   const [fiyat, setFiyat] = useState("100")
   const [adet, setAdet] = useState("1")
   const [odemeTipi, setOdemeTipi] = useState("pesin")
-  const [indirimTutar, setIndirimTutar] = useState("0")
+  const [indirimYuzde, setIndirimYuzde] = useState("0")
 
   // Animation
   useEffect(() => {
@@ -83,7 +83,6 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
     setSentCode(code)
     setIsCodeSent(true)
     setCodeError("")
-    // In a real app this would send via SMS API
     alert(`Dogrulama kodu gonderildi: ${code}`)
   }
 
@@ -106,7 +105,6 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
       setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
       return
     }
-    // Simulated save (in a real app this goes to DB)
     setCustomerSaved(true)
     setTimeout(() => setCustomerSaved(false), 3000)
   }
@@ -132,10 +130,11 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
     setReceiverSube("")
   }
 
-  // Calculate total
+  // Calculate total with percentage discount
   const priceNum = Math.max(Number(fiyat) || 0, 100)
-  const discountNum = Number(indirimTutar) || 0
-  const toplamTutar = Math.max(priceNum - discountNum, 0)
+  const discountPercent = Math.min(Math.max(Number(indirimYuzde) || 0, 0), 100)
+  const discountAmount = (priceNum * discountPercent) / 100
+  const toplamTutar = Math.max(priceNum - discountAmount, 0)
 
   const handleSubmitCargo = () => {
     if (!senderAd || !receiverAd) {
@@ -164,6 +163,7 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
       arrivalDate: "",
       arrivalTime: "",
       plate: "",
+      createdAt: now.toISOString(),
     }
 
     onSubmit(newCargo)
@@ -218,7 +218,11 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                     </span>
                     <button
                       onClick={handleSaveCustomer}
-                      className="flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:border-cargo-green hover:bg-cargo-green/5"
+                      className={`flex items-center gap-1.5 rounded-md border px-4 py-2 text-xs font-medium transition-colors ${
+                        customerSaved
+                          ? "border-cargo-green bg-cargo-green/10 text-cargo-green"
+                          : "border-border text-foreground hover:border-cargo-green hover:bg-cargo-green/5"
+                      }`}
                     >
                       <UserPlus className="h-3.5 w-3.5" />
                       {customerSaved ? "Kaydedildi!" : "Musteri Ekle"}
@@ -307,15 +311,19 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                       setCodeError("")
                     }}
                     disabled={!isCodeSent}
-                    className={`flex-1 border-border bg-background ${isCodeVerified ? "border-cargo-green" : ""}`}
+                    className={`flex-1 border-border bg-background transition-colors ${
+                      isCodeVerified
+                        ? "border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
+                        : ""
+                    }`}
                     maxLength={4}
                   />
                   <button
                     onClick={handleVerifyCode}
                     disabled={!isCodeSent || dogrulamaKodu.length < 4}
-                    className={`flex h-9 w-9 items-center justify-center rounded-md border transition-colors ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-md border transition-all ${
                       isCodeVerified
-                        ? "border-cargo-green bg-cargo-green text-white"
+                        ? "border-emerald-500 bg-emerald-500 text-white"
                         : "border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
                     }`}
                     aria-label="Dogrula"
@@ -323,6 +331,12 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                     <Check className="h-4 w-4" />
                   </button>
                 </div>
+                {isCodeVerified && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    <Check className="h-3 w-3" />
+                    Kod basariyla dogrulandi
+                  </p>
+                )}
                 {codeError && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
                     <AlertCircle className="h-3 w-3" />
@@ -381,7 +395,7 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                   />
                 </div>
 
-                <div className="mb-4">
+                <div>
                   <Input
                     placeholder="Alici Sube / Il / Ilce"
                     value={receiverSube}
@@ -389,11 +403,6 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                     className="border-border bg-background"
                   />
                 </div>
-
-                <button className="flex w-full items-center justify-center gap-2 rounded-md bg-cargo-teal px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-cargo-green">
-                  <Truck className="h-4 w-4" />
-                  Kargo Tasima Plani
-                </button>
               </div>
             </div>
           </div>
@@ -507,16 +516,35 @@ export function NewCargoForm({ onClose, onSubmit }: NewCargoFormProps) {
                     </Select>
                   </div>
                   <div className="w-28">
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Indirim</label>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={indirimTutar}
-                      onChange={(e) => setIndirimTutar(e.target.value)}
-                      className="border-border bg-background text-right"
-                    />
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        Indirim
+                        <Percent className="h-3 w-3" />
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={indirimYuzde}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value) || 0, 100)
+                          setIndirimYuzde(String(val))
+                        }}
+                        className="border-border bg-background pr-8 text-right"
+                      />
+                      <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
                   </div>
                 </div>
+
+                {discountPercent > 0 && (
+                  <div className="mb-2 flex items-center justify-between px-1 text-xs text-muted-foreground">
+                    <span>Indirim ({discountPercent}%)</span>
+                    <span className="text-destructive">-{discountAmount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between rounded-lg border border-border bg-background px-4 py-3">
                   <span className="text-sm text-muted-foreground">Toplam Tutar</span>

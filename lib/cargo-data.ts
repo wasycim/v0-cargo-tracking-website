@@ -17,6 +17,7 @@ export interface Cargo {
   arrivalDate: string
   arrivalTime: string
   plate: string
+  createdAt?: string
 }
 
 export const statusLabels: Record<CargoStatus, string> = {

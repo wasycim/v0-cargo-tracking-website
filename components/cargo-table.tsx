@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu, RefreshCw, RotateCcw } from "lucide-react"
+import { Menu, RefreshCw, RotateCcw, Pencil } from "lucide-react"
 import type { Cargo } from "@/lib/cargo-data"
 import { statusColors, statusLabels } from "@/lib/cargo-data"
 import {
@@ -16,6 +16,7 @@ import { useState, useEffect } from "react"
 interface CargoTableProps {
   cargos: Cargo[]
   onLoadCargo?: (cargoId: string, trackingNo: string) => void
+  onEditCargo?: (cargo: Cargo) => void
 }
 
 function StatusBadge({ status }: { status: Cargo["status"] }) {
@@ -31,7 +32,7 @@ function StatusBadge({ status }: { status: Cargo["status"] }) {
   )
 }
 
-export function CargoTable({ cargos, onLoadCargo }: CargoTableProps) {
+export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps) {
   const [countdown, setCountdown] = useState(184)
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function CargoTable({ cargos, onLoadCargo }: CargoTableProps) {
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-[120px] text-center font-semibold text-foreground">Kargo Durum</TableHead>
-              <TableHead className="w-[30px]"></TableHead>
+              <TableHead className="w-[60px]"></TableHead>
               <TableHead className="font-semibold text-foreground">Takip No</TableHead>
               <TableHead className="w-[60px] text-center font-semibold text-foreground">Parca</TableHead>
               <TableHead className="font-semibold text-foreground">Gonderici</TableHead>
@@ -106,20 +107,30 @@ export function CargoTable({ cargos, onLoadCargo }: CargoTableProps) {
                     <StatusBadge status={cargo.status} />
                   </TableCell>
                   <TableCell>
-                    {cargo.status === "yuklenecek" ? (
+                    <div className="flex items-center gap-1">
+                      {cargo.status === "yuklenecek" ? (
+                        <button
+                          onClick={() => onLoadCargo?.(cargo.id, cargo.trackingNo)}
+                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-cargo-green/10 hover:text-cargo-green"
+                          aria-label="Kargo yukle"
+                          title="Kargo Yukle"
+                        >
+                          <Menu className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <span className="p-1 text-muted-foreground/30">
+                          <Menu className="h-4 w-4" />
+                        </span>
+                      )}
                       <button
-                        onClick={() => onLoadCargo?.(cargo.id, cargo.trackingNo)}
-                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-cargo-green/10 hover:text-cargo-green"
-                        aria-label="Kargo yukle"
-                        title="Kargo Yukle"
+                        onClick={() => onEditCargo?.(cargo)}
+                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-blue-500/10 hover:text-blue-600 dark:hover:text-blue-400"
+                        aria-label="Kargo bilgileri duzenle"
+                        title="Kargo Bilgileri Duzenle"
                       >
-                        <Menu className="h-4 w-4" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
-                    ) : (
-                      <span className="text-muted-foreground/40">
-                        <Menu className="h-4 w-4" />
-                      </span>
-                    )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="cursor-pointer text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">

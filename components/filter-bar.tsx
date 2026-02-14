@@ -8,7 +8,6 @@ interface FilterBarProps {
     devir: boolean
     giden: boolean
     eskiAktif: boolean
-    teslim: boolean
     iptal: boolean
   }
   onFilterChange: (key: string, value: boolean) => void
@@ -46,15 +45,7 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps) {
           checked={filters.eskiAktif}
           onCheckedChange={(v) => onFilterChange("eskiAktif", v as boolean)}
         />
-        Bir aydan eski aktif kargolari listele.
-      </label>
-
-      <label className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Checkbox
-          checked={filters.teslim}
-          onCheckedChange={(v) => onFilterChange("teslim", v as boolean)}
-        />
-        Bir ay icerisinde teslim edilenleri goster.
+        Eski Kargolari Goruntule
       </label>
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -62,7 +53,7 @@ export function FilterBar({ filters, onFilterChange }: FilterBarProps) {
           checked={filters.iptal}
           onCheckedChange={(v) => onFilterChange("iptal", v as boolean)}
         />
-        Bir ay icerisinde iptal edilenleri goster.
+        Iptal edilenleri goster
       </label>
     </div>
   )
