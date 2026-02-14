@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu, RefreshCw, RotateCcw, Pencil } from "lucide-react"
+import { Menu, RefreshCw, Pencil, Copy, Check } from "lucide-react"
 import type { Cargo } from "@/lib/cargo-data"
 import { statusColors, statusLabels } from "@/lib/cargo-data"
 import {
@@ -11,54 +11,61 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 interface CargoTableProps {
   cargos: Cargo[]
   onLoadCargo?: (cargoId: string, trackingNo: string) => void
   onEditCargo?: (cargo: Cargo) => void
+  onToast?: (message: string) => void
 }
 
 function StatusBadge({ status }: { status: Cargo["status"] }) {
   const colors = statusColors[status]
   const label = statusLabels[status]
-
   return (
-    <span
-      className={`inline-block rounded px-3 py-1 text-xs font-semibold ${colors.bg} ${colors.text} border ${colors.border}`}
-    >
+    <span className={`inline-block rounded px-3 py-1 text-xs font-semibold ${colors.bg} ${colors.text} border ${colors.border}`}>
       {label}
     </span>
   )
 }
 
-export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps) {
-  const [countdown, setCountdown] = useState(184)
+export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast }: CargoTableProps) {
+  const [countdown, setCountdown] = useState(120)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => (prev <= 0 ? 184 : prev - 1))
+      setCountdown((prev) => (prev <= 1 ? 120 : prev - 1))
     }, 1000)
     return () => clearInterval(timer)
   }, [])
 
+  const handleCopyTracking = useCallback(async (trackingNo: string, cargoId: string) => {
+    try {
+      await navigator.clipboard.writeText(trackingNo.replace(/\s/g, ""))
+      setCopiedId(cargoId)
+      onToast?.(`Takip No kopyalandi: ${trackingNo}`)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      // fallback
+      const el = document.createElement("textarea")
+      el.value = trackingNo.replace(/\s/g, "")
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand("copy")
+      document.body.removeChild(el)
+      setCopiedId(cargoId)
+      onToast?.(`Takip No kopyalandi: ${trackingNo}`)
+      setTimeout(() => setCopiedId(null), 2000)
+    }
+  }, [onToast])
+
   return (
     <div className="px-4 pb-4">
       <div className="mb-2 flex items-center justify-end gap-4 py-2 text-sm text-muted-foreground">
-        <span>
-          Liste {countdown} sn. sonra yenilenecek.
-        </span>
-        <button
-          onClick={() => setCountdown(184)}
-          className="flex items-center gap-1 transition-colors hover:text-foreground"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Sifirla
-        </button>
-        <button
-          onClick={() => setCountdown(184)}
-          className="flex items-center gap-1 transition-colors hover:text-foreground"
-        >
+        <span>Liste {countdown} sn. sonra yenilenecek.</span>
+        <button onClick={() => setCountdown(120)} className="flex items-center gap-1 transition-colors hover:text-foreground">
           <RefreshCw className="h-3.5 w-3.5" />
           Yenile
         </button>
@@ -78,14 +85,10 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps
               <TableHead className="font-semibold text-foreground">Nereye</TableHead>
               <TableHead className="text-right font-semibold text-foreground">Tutar</TableHead>
               <TableHead className="text-center font-semibold text-foreground">
-                <div>Sefer</div>
-                <div>Hareket</div>
-                <div>Tarihi</div>
+                <div>Sefer Hareket</div><div>Tarihi</div>
               </TableHead>
               <TableHead className="text-center font-semibold text-foreground">
-                <div>Sefer</div>
-                <div>Varis</div>
-                <div>Tarihi</div>
+                <div>Sefer Varis</div><div>Tarihi</div>
               </TableHead>
               <TableHead className="font-semibold text-foreground">Plaka</TableHead>
             </TableRow>
@@ -99,10 +102,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps
               </TableRow>
             ) : (
               cargos.map((cargo, index) => (
-                <TableRow
-                  key={cargo.id}
-                  className={`${index % 2 === 0 ? "bg-card" : "bg-muted/30"} transition-colors hover:bg-muted/50`}
-                >
+                <TableRow key={cargo.id} className={`${index % 2 === 0 ? "bg-card" : "bg-muted/30"} transition-colors hover:bg-muted/50`}>
                   <TableCell className="text-center">
                     <StatusBadge status={cargo.status} />
                   </TableCell>
@@ -118,9 +118,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps
                           <Menu className="h-4 w-4" />
                         </button>
                       ) : (
-                        <span className="p-1 text-muted-foreground/30">
-                          <Menu className="h-4 w-4" />
-                        </span>
+                        <span className="p-1 text-muted-foreground/30"><Menu className="h-4 w-4" /></span>
                       )}
                       <button
                         onClick={() => onEditCargo?.(cargo)}
@@ -133,20 +131,25 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="cursor-pointer text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                      {cargo.trackingNo}
-                    </span>
+                    <button
+                      onClick={() => handleCopyTracking(cargo.trackingNo, cargo.id)}
+                      className="group flex items-center gap-1.5 text-sm text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      title="Tiklayarak kopyala"
+                    >
+                      <span className="underline">{cargo.trackingNo}</span>
+                      {copiedId === cargo.id ? (
+                        <Check className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                      )}
+                    </button>
                   </TableCell>
                   <TableCell className="text-center text-sm text-foreground">{cargo.pieces}</TableCell>
                   <TableCell className="max-w-[250px] text-sm text-foreground">
-                    {cargo.sender.split("\n").map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
+                    {cargo.sender.split("\n").map((line, i) => (<div key={i}>{line}</div>))}
                   </TableCell>
                   <TableCell className="text-sm text-foreground">
-                    {cargo.receiver.split("\n").map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
+                    {cargo.receiver.split("\n").map((line, i) => (<div key={i}>{line}</div>))}
                   </TableCell>
                   <TableCell className="text-sm text-foreground">
                     <div className="text-muted-foreground">{cargo.from}</div>
@@ -165,13 +168,11 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo }: CargoTableProps
                         ? "bg-amber-100 font-semibold text-amber-900 dark:bg-amber-900/30 dark:text-amber-300"
                         : "text-foreground"
                     }`}>
-                      <div>{cargo.departureDate}</div>
-                      <div>{cargo.departureTime}</div>
+                      <div>{cargo.departureDate}</div><div>{cargo.departureTime}</div>
                     </div>
                   </TableCell>
                   <TableCell className="text-center text-xs text-foreground">
-                    <div>{cargo.arrivalDate}</div>
-                    <div>{cargo.arrivalTime}</div>
+                    <div>{cargo.arrivalDate}</div><div>{cargo.arrivalTime}</div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-foreground">{cargo.plate}</TableCell>
                 </TableRow>
