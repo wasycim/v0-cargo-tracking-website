@@ -87,14 +87,14 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   const handleSendCode = () => {
     setPhoneError("")
     if (!validatePhone(senderTelefon)) {
-      setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
+      setPhoneError("Ge\u00e7erli bir telefon numaras\u0131 girin (5XX XXX XX XX)")
       return
     }
     const code = String(Math.floor(1000 + Math.random() * 9000))
     setSentCode(code)
     setIsCodeSent(true)
     setCodeError("")
-    alert(`Dogrulama kodu gonderildi: ${code}`)
+    alert("Do\u011frulama kodu g\u00f6nderildi: " + code)
   }
 
   const handleVerifyCode = () => {
@@ -102,18 +102,18 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       setIsCodeVerified(true)
       setCodeError("")
     } else {
-      setCodeError("Kod hatali, tekrar deneyin")
+      setCodeError("Kod hatal\u0131, tekrar deneyin")
       setIsCodeVerified(false)
     }
   }
 
   const handleSaveCustomer = () => {
     if (!senderTc || !senderAd || !senderSoyad || !senderTelefon) {
-      alert("Lutfen TC, Ad, Soyad ve Telefon alanlarini doldurun")
+      alert("L\u00fctfen TC, Ad, Soyad ve Telefon alanlar\u0131n\u0131 doldurun")
       return
     }
     if (!validatePhone(senderTelefon)) {
-      setPhoneError("Gecerli bir telefon numarasi girin (5XX XXX XX XX)")
+      setPhoneError("Ge\u00e7erli bir telefon numaras\u0131 girin (5XX XXX XX XX)")
       return
     }
     onCustomerSaved?.({
@@ -158,23 +158,23 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
   const handleSubmitCargo = () => {
     if (!senderAd || !senderSoyad) {
-      alert("Gonderici Ad ve Soyad alanlarini doldurun")
+      alert("G\u00f6nderici Ad ve Soyad alanlar\u0131n\u0131 doldurun")
       return
     }
     if (!senderTelefon || !validatePhone(senderTelefon)) {
-      alert("Gecerli bir gonderici telefon numarasi girin")
+      alert("Ge\u00e7erli bir g\u00f6nderici telefon numaras\u0131 girin")
       return
     }
     if (senderEmail && !validateEmail(senderEmail)) {
-      alert("Gecerli bir e-posta adresi girin (ornek: ad@domain.com)")
+      alert("Ge\u00e7erli bir e-posta adresi girin (\u00f6rnek: ad@domain.com)")
       return
     }
     if (!isCodeVerified) {
-      alert("Kargo eklemeden once dogrulama kodunu gonderin ve onaylayin")
+      alert("Kargo eklemeden \u00f6nce do\u011frulama kodunu g\u00f6nderin ve onaylay\u0131n")
       return
     }
     if (!receiverAd) {
-      alert("Alici bilgilerini doldurun")
+      alert("Al\u0131c\u0131 bilgilerini doldurun")
       return
     }
     if (!receiverSube) {

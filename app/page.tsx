@@ -144,16 +144,18 @@ export default function Page() {
       .reduce((sum, cargo) => sum + cargo.amount, 0)
   }, [filteredCargos])
 
-  // Save cargo to DB
-  const saveCargoDB = useCallback(async (cargo: Cargo) => {
-    if (!kullanici?.sube) return
+  // Save cargo to DB and return the real DB id
+  const saveCargoDB = useCallback(async (cargo: Cargo): Promise<string | null> => {
+    if (!kullanici?.sube) return null
     try {
-      await fetch("/api/kargolar", {
+      const res = await fetch("/api/kargolar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...cargo, sube: kullanici.sube, kullanici_id: kullanici.id }),
       })
-    } catch { /* ignore */ }
+      const data = await res.json()
+      return data.cargo?.id || null
+    } catch { return null }
   }, [kullanici])
 
   // Update cargo in DB
@@ -167,10 +169,17 @@ export default function Page() {
     } catch { /* ignore */ }
   }, [])
 
-  const handleNewCargoSubmit = useCallback((newCargo: Cargo) => {
+  const handleNewCargoSubmit = useCallback(async (newCargo: Cargo) => {
+    // Add to local state immediately with temp id
+    const tempId = newCargo.id
     setCargos((prev) => [newCargo, ...prev])
-    saveCargoDB(newCargo)
-    showToast("Kargo başarıyla eklendi")
+    showToast("Kargo ba\u015far\u0131yla eklendi")
+
+    // Save to DB, get real id back
+    const dbId = await saveCargoDB(newCargo)
+    if (dbId && dbId !== tempId) {
+      setCargos((prev) => prev.map((c) => c.id === tempId ? { ...c, id: dbId } : c))
+    }
   }, [showToast, saveCargoDB])
 
   const handleCustomerSavedFromForm = useCallback((customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => {

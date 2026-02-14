@@ -96,7 +96,7 @@ export function LoadCargoForm({ cargoId, trackingNo, onClose, onSubmit }: LoadCa
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Arac Telefon</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{"Ara\u00e7 Telefon"}</label>
             <Input
               placeholder="5XX XXX XX XX"
               value={aracTelefon}
