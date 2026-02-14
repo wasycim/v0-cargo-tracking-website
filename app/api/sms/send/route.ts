@@ -16,10 +16,19 @@ export async function POST(request: Request) {
     const authToken = process.env.TWILIO_AUTH_TOKEN
     const fromNumber = process.env.TWILIO_PHONE_NUMBER
 
+    // Kodu Supabase'e kaydet (Twilio olsun olmasin)
+    const supabase = await createClient()
+    await supabase.from("sms_kodlari").upsert({
+      telefon: telefon.replace(/\s/g, ""),
+      kod: code,
+      kullanildi: false,
+      created_at: new Date().toISOString(),
+    }, { onConflict: "telefon" })
+
     if (!accountSid || !authToken || !fromNumber) {
-      // Twilio ayarlanmamissa kodu direkt dondur (gelistirme modu)
-      console.log("[v0] Twilio not configured, returning code directly:", code)
-      return NextResponse.json({ success: true, code, dev: true })
+      // Twilio ayarlanmamissa - gelistirme modu, kodu alert ile goster
+      console.log("[v0] Twilio not configured, code:", code)
+      return NextResponse.json({ success: true, devCode: code })
     }
 
     // Twilio API ile SMS gonder
@@ -44,19 +53,8 @@ export async function POST(request: Request) {
     if (!res.ok) {
       const err = await res.json()
       console.error("[v0] Twilio error:", err)
-      // Twilio hatasi olsa bile kodu dondur ki sistem calissin
-      return NextResponse.json({ success: true, code, twilioError: true })
+      return NextResponse.json({ error: "SMS g\u00f6nderilemedi, l\u00fctfen tekrar deneyin" }, { status: 500 })
     }
-
-    // SMS basariyla gonderildi - kodu sadece backend'de tut
-    // Supabase'e kaydet
-    const supabase = await createClient()
-    await supabase.from("sms_kodlari").upsert({
-      telefon: telefon.replace(/\s/g, ""),
-      kod: code,
-      kullanildi: false,
-      created_at: new Date().toISOString(),
-    }, { onConflict: "telefon" })
 
     return NextResponse.json({ success: true })
   } catch (error) {
