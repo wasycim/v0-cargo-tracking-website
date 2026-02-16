@@ -108,30 +108,43 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     }
     setSmsSending(true)
     try {
+      console.log("[v0] Firebase config:", {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "SET" : "MISSING",
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? "SET" : "MISSING",
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "SET" : "MISSING",
+      })
       setupRecaptcha()
       const appVerifier = (window as Record<string, unknown>).recaptchaVerifier as RecaptchaVerifier
       const phoneNumber = "+90" + senderTelefon.replace(/\s/g, "")
+      console.log("[v0] Sending OTP to:", phoneNumber)
       const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+      console.log("[v0] OTP sent successfully")
       setConfirmationResult(result)
       setIsCodeSent(true)
       setCodeError("")
       setSentCode("sent")
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : ""
+      console.log("[v0] Firebase OTP error:", err)
+      const errorMsg = err instanceof Error ? err.message : String(err)
       if (errorMsg.includes("too-many-requests")) {
-        setPhoneError("Çok fazla deneme yaptınız, lütfen bekleyin")
+        setPhoneError("\u00c7ok fazla deneme yapt\u0131n\u0131z, l\u00fctfen bekleyin")
       } else if (errorMsg.includes("invalid-phone-number")) {
-        setPhoneError("Geçersiz telefon numarası")
+        setPhoneError("Ge\u00e7ersiz telefon numaras\u0131")
+      } else if (errorMsg.includes("auth/operation-not-allowed")) {
+        setPhoneError("Telefon do\u011frulama etkin de\u011fil. Firebase Console'dan etkinle\u015ftirin.")
+      } else if (errorMsg.includes("missing-client-identifier") || errorMsg.includes("captcha-check-failed")) {
+        setPhoneError("Captcha do\u011frulama ba\u015far\u0131s\u0131z, sayfay\u0131 yenileyip tekrar deneyin")
       } else {
-        setPhoneError("SMS gönderilemedi, tekrar deneyin")
+        setPhoneError("SMS g\u00f6nderilemedi: " + errorMsg.slice(0, 100))
       }
       // Recaptcha'yi sifirla
-      if ((window as Record<string, unknown>).recaptchaVerifier) {
-        try {
-          (((window as Record<string, unknown>).recaptchaVerifier) as RecaptchaVerifier).clear()
-        } catch { /* ignore */ }
-        (window as Record<string, unknown>).recaptchaVerifier = undefined
-      }
+      try {
+        const rv = (window as Record<string, unknown>).recaptchaVerifier
+        if (rv && typeof (rv as { clear?: () => void }).clear === "function") {
+          (rv as { clear: () => void }).clear()
+        }
+      } catch { /* ignore */ }
+      (window as Record<string, unknown>).recaptchaVerifier = undefined
     } finally {
       setSmsSending(false)
     }
