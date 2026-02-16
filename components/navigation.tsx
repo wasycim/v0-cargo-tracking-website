@@ -4,13 +4,14 @@ import { Sun, Moon, Settings, LogOut, User } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 
-export type AppPage = "anasayfa" | "kargolar" | "musteriler" | "kasaislemleri" | "raporlar" | "ayarlar"
+export type AppPage = "anasayfa" | "kargolar" | "gonderilenler" | "musteriler" | "kasaislemleri" | "raporlar" | "ayarlar"
 
 const navItems: { label: string; id: AppPage }[] = [
   { label: "Ana Sayfa", id: "anasayfa" },
   { label: "Kargolar", id: "kargolar" },
-  { label: "Müşteriler", id: "musteriler" },
-  { label: "Kasa İşlemleri", id: "kasaislemleri" },
+  { label: "G\u00f6nderilenler", id: "gonderilenler" },
+  { label: "M\u00fc\u015fteriler", id: "musteriler" },
+  { label: "Kasa \u0130\u015flemleri", id: "kasaislemleri" },
   { label: "Raporlar", id: "raporlar" },
 ]
 

@@ -1,4 +1,4 @@
-export type CargoStatus = "yuklenecek" | "giden" | "teslim" | "iptal"
+export type CargoStatus = "yuklenecek" | "giden" | "gonderildi" | "teslim" | "iptal"
 
 export interface Cargo {
   id: string
@@ -25,15 +25,17 @@ export interface Cargo {
 }
 
 export const statusLabels: Record<CargoStatus, string> = {
-  yuklenecek: "Yüklenecek",
+  yuklenecek: "Y\u00fcklenecek",
   giden: "Giden",
+  gonderildi: "G\u00f6nderildi",
   teslim: "Teslim",
-  iptal: "İptal",
+  iptal: "\u0130ptal",
 }
 
 export const statusColors: Record<CargoStatus, { bg: string; text: string; border: string }> = {
   yuklenecek: { bg: "bg-card", text: "text-cargo-green", border: "border-cargo-green" },
   giden: { bg: "bg-cargo-dark", text: "text-white", border: "border-cargo-dark" },
+  gonderildi: { bg: "bg-blue-600", text: "text-white", border: "border-blue-600" },
   teslim: { bg: "bg-emerald-600", text: "text-white", border: "border-emerald-600" },
   iptal: { bg: "bg-red-500", text: "text-white", border: "border-red-500" },
 }

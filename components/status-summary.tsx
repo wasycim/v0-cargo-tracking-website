@@ -10,12 +10,14 @@ interface StatusSummaryProps {
 export function StatusSummary({ cargos, kasaTutari }: StatusSummaryProps) {
   const yuklenecekCount = cargos.filter((c) => c.status === "yuklenecek").length
   const gidenCount = cargos.filter((c) => c.status === "giden").length
+  const gonderildiCount = cargos.filter((c) => c.status === "gonderildi").length
   const iptalCount = cargos.filter((c) => c.status === "iptal").length
 
   const items = [
-    { label: "Yüklenecek", count: yuklenecekCount, borderColor: "border-cargo-green", badgeBg: "bg-cargo-green" },
+    { label: "Y\u00fcklenecek", count: yuklenecekCount, borderColor: "border-cargo-green", badgeBg: "bg-cargo-green" },
     { label: "Giden", count: gidenCount, borderColor: "border-cargo-dark", badgeBg: "bg-cargo-dark" },
-    { label: "İptal", count: iptalCount, borderColor: "border-red-500", badgeBg: "bg-red-500" },
+    { label: "G\u00f6nderildi", count: gonderildiCount, borderColor: "border-blue-600", badgeBg: "bg-blue-600" },
+    { label: "\u0130ptal", count: iptalCount, borderColor: "border-red-500", badgeBg: "bg-red-500" },
   ]
 
   return (

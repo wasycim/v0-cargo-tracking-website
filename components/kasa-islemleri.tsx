@@ -24,25 +24,35 @@ function parseDDMMYYYY(dateStr: string): Date | null {
   return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
 }
 
+function getTodayRange() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+  return { start, end }
+}
+
 export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
   const today = new Date().toISOString().split("T")[0]
   const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
   const [searchText, setSearchText] = useState("")
-  const [kasaKapatildi, setKasaKapatildi] = useState(false)
   const [queryDates, setQueryDates] = useState({ start: today, end: today })
 
+  // Her gece 00:00'da kasa otomatik sifirlanir - tarih degisikligini izle
   useEffect(() => {
-    const check = () => {
+    const checkMidnight = () => {
       const now = new Date()
-      if (now.getHours() === 3 && now.getMinutes() === 0) {
-        setKasaKapatildi(true)
+      const newToday = now.toISOString().split("T")[0]
+      if (newToday !== today) {
+        // Gun degisti, kasa sifirlandi
+        setStartDate(newToday)
+        setEndDate(newToday)
+        setQueryDates({ start: newToday, end: newToday })
       }
     }
-    const interval = setInterval(check, 60000)
-    check()
+    const interval = setInterval(checkMidnight, 30000) // 30 saniyede bir kontrol
     return () => clearInterval(interval)
-  }, [])
+  }, [today])
 
   const handleSorgula = () => {
     setQueryDates({ start: startDate, end: endDate })
@@ -67,10 +77,10 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
         kargoTakipNo: c.trackingNo,
         odemeyiAlanSube: sube,
         odemeyiYapanKisi: c.sender.split("\n")[0],
-        islemTuru: c.status === "iptal" ? "İptal" : "Nakit",
+        islemTuru: c.status === "iptal" ? "\u0130ptal" : "Nakit",
         devredenTutar: 0,
         genelToplam: c.status === "iptal" ? 0 : c.amount,
-        aciklama: c.status === "iptal" ? "İptal edildi" : "",
+        aciklama: c.status === "iptal" ? "\u0130ptal edildi" : "",
         islemTarihi: `${c.departureDate} ${c.departureTime}`,
         personel: "Personel",
         isGiris: c.status !== "iptal",
@@ -87,14 +97,23 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
     )
   }, [kasaIslemleri, searchText])
 
+  // Anlik kasa - sadece bugunun islemlerini sayar (gece 00:00'da sifirlanir)
   const anlikKasa = useMemo(() => {
-    if (kasaKapatildi) return 0
-    return filteredIslemler.reduce((sum, k) => sum + (k.isGiris ? k.genelToplam : 0), 0)
-  }, [filteredIslemler, kasaKapatildi])
+    const { start, end } = getTodayRange()
+    return cargos
+      .filter((c) => {
+        if (c.status === "iptal") return false
+        if (!c.departureDate) return false
+        const d = parseDDMMYYYY(c.departureDate)
+        if (!d) return false
+        return d >= start && d <= end
+      })
+      .reduce((sum, c) => sum + c.amount, 0)
+  }, [cargos])
 
   return (
     <div className="p-4">
-      <h1 className="mb-6 text-xl font-bold text-foreground">Kasa İşlemleri</h1>
+      <h1 className="mb-6 text-xl font-bold text-foreground">Kasa {"\u0130\u015flemleri"}</h1>
 
       {/* Kasa Bilgisi */}
       <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
@@ -102,15 +121,15 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
           <span className="text-sm font-medium text-muted-foreground">Kasa Bilgisi</span>
         </div>
         <div className="p-5">
-          {kasaKapatildi ? (
-            <p className="mb-2 text-base font-semibold text-destructive">Bugün kasa kapatma işlemi yapılmıştır.</p>
-          ) : (
-            <p className="mb-2 text-base font-semibold text-cargo-green">Kasa açık.</p>
-          )}
+          <p className="mb-2 text-sm text-muted-foreground">
+            Kasa her gece 00:00{"'"}da otomatik olarak s\u0131f\u0131rlan\u0131r.
+          </p>
           <p className="text-sm text-foreground">
-            <span className="font-semibold">Şube : </span>{sube}{" "}
-            <span className="font-semibold">Anlık Kasa Tutarı : </span>
-            {anlikKasa.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}
+            <span className="font-semibold">{"\u015eube"} : </span>{sube}{" "}
+            <span className="ml-4 font-semibold">{"Bug\u00fcn\u00fcn Kasa Tutar\u0131"} : </span>
+            <span className="text-lg font-bold text-cargo-green">
+              {anlikKasa.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} TL
+            </span>
           </p>
         </div>
       </div>
@@ -123,11 +142,11 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
         <div className="p-5">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Başlangıç Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{"Ba\u015flang\u0131\u00e7 Tarihi"}</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Bitiş Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{"Biti\u015f Tarihi"}</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
@@ -149,7 +168,7 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Arama: Tüm Metin Sütunları"
+              placeholder={"Arama: T\u00fcm Metin S\u00fctunlar\u0131"}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="h-8 w-48 border-border bg-background text-xs"
@@ -163,13 +182,13 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="font-semibold text-foreground">Kargo Takip No</TableHead>
-                <TableHead className="font-semibold text-foreground">Ödemeyi Alan Şube</TableHead>
-                <TableHead className="font-semibold text-foreground">Ödemeyi Yapan Kişi</TableHead>
-                <TableHead className="font-semibold text-foreground">İşlem Türü</TableHead>
+                <TableHead className="font-semibold text-foreground">{"\u00d6demeyi Alan \u015eube"}</TableHead>
+                <TableHead className="font-semibold text-foreground">{"\u00d6demeyi Yapan Ki\u015fi"}</TableHead>
+                <TableHead className="font-semibold text-foreground">{"\u0130\u015flem T\u00fcr\u00fc"}</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Devreden Tutar</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Genel Toplam</TableHead>
-                <TableHead className="font-semibold text-foreground">Açıklama</TableHead>
-                <TableHead className="font-semibold text-foreground">İşlem Tarihi</TableHead>
+                <TableHead className="font-semibold text-foreground">{"A\u00e7\u0131klama"}</TableHead>
+                <TableHead className="font-semibold text-foreground">{"\u0130\u015flem Tarihi"}</TableHead>
                 <TableHead className="font-semibold text-foreground">Personel</TableHead>
               </TableRow>
             </TableHeader>
@@ -177,7 +196,7 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
               {filteredIslemler.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                    Seçilen tarih aralığında işlem bulunamadı.
+                    {"Se\u00e7ilen tarih aral\u0131\u011f\u0131nda i\u015flem bulunamad\u0131."}
                   </TableCell>
                 </TableRow>
               ) : (

@@ -107,6 +107,30 @@ export default function Page() {
     loadCustomers()
   }, [isLoggedIn, kullanici?.sube])
 
+  // Varis saati gecen kargolari otomatik "gonderildi" yap
+  useEffect(() => {
+    const checkExpired = () => {
+      const now = new Date()
+      setCargos((prev) => prev.map((c) => {
+        if (c.status !== "giden") return c
+        if (!c.arrivalDate || !c.arrivalTime) return c
+        // arrivalDate "DD.MM.YYYY", arrivalTime "HH:MM"
+        const parts = c.arrivalDate.split(".")
+        if (parts.length !== 3) return c
+        const [hh, mm] = c.arrivalTime.split(":").map(Number)
+        const arrivalDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), hh || 23, mm || 59)
+        if (now > arrivalDate) {
+          updateCargoDB(c.id, { status: "gonderildi" })
+          return { ...c, status: "gonderildi" as const }
+        }
+        return c
+      }))
+    }
+    checkExpired()
+    const interval = setInterval(checkExpired, 60000) // Her dakika kontrol
+    return () => clearInterval(interval)
+  }, [cargos.length, updateCargoDB])
+
   // Load sube ayarlar
   useEffect(() => {
     if (!isLoggedIn || !kullanici?.sube) return
@@ -139,6 +163,7 @@ export default function Page() {
     setSubeAyarlar(null)
   }, [])
 
+  // Aktif kargolar (yuklenecek + giden)
   const filteredCargos = useMemo(() => {
     const now = new Date()
     const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
@@ -149,12 +174,17 @@ export default function Page() {
         if (created < oneMonthAgo) return false
       }
       if (cargo.status === "yuklenecek") return true
-      if (cargo.status === "giden" && !filters.giden) return false
-      if (cargo.status === "iptal" && !filters.iptal) return false
-      if (cargo.status === "teslim") return false
-      return true
+      if (cargo.status === "giden") return filters.giden
+      if (cargo.status === "iptal") return filters.iptal
+      // gonderildi ve teslim ana listede gosterilmez
+      return false
     })
   }, [filters, cargos])
+
+  // Gonderilen kargolar
+  const gonderildiCargos = useMemo(() => {
+    return cargos.filter((c) => c.status === "gonderildi")
+  }, [cargos])
 
   const handleFilterChange = (key: string, value: boolean) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
@@ -348,6 +378,23 @@ export default function Page() {
           <CargoTable
             cargos={filteredCargos}
             onLoadCargo={handleLoadCargo}
+            onEditCargo={setEditingCargo}
+            onToast={(msg) => showToast(msg)}
+            kullaniciSube={kullanici?.sube}
+            subeAyarlar={subeAyarlar}
+          />
+        </>
+      )}
+
+      {activePage === "gonderilenler" && (
+        <>
+          <div className="border-b border-border bg-card px-4 py-3">
+            <h2 className="text-lg font-bold text-foreground">
+              {"G\u00f6nderilen Kargolar"} <span className="ml-2 text-sm font-normal text-muted-foreground">({gonderildiCargos.length} adet)</span>
+            </h2>
+          </div>
+          <CargoTable
+            cargos={gonderildiCargos}
             onEditCargo={setEditingCargo}
             onToast={(msg) => showToast(msg)}
             kullaniciSube={kullanici?.sube}
