@@ -1,0 +1,15 @@
+{
+  "name": "kargo-whatsapp-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Kargo Takip WhatsApp Bot - Ofis bilgisayarinda calisir",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}
