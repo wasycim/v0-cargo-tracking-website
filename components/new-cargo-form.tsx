@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { X, Send, UserPlus, Eraser, Check, AlertCircle, Percent, Loader2 } from "lucide-react"
+import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/lib/firebase"
+import type { ConfirmationResult } from "@/lib/firebase"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -86,6 +88,17 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
   const [smsSending, setSmsSending] = useState(false)
   const [smsVerifying, setSmsVerifying] = useState(false)
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
+
+  const setupRecaptcha = useCallback(() => {
+    if (typeof window === "undefined") return
+    if (!(window as Record<string, unknown>).recaptchaVerifier) {
+      (window as Record<string, unknown>).recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        callback: () => {},
+      })
+    }
+  }, [])
 
   const handleSendCode = async () => {
     setPhoneError("")
@@ -95,55 +108,51 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     }
     setSmsSending(true)
     try {
-      const res = await fetch("/api/sms/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telefon: senderTelefon.replace(/\s/g, "") }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setIsCodeSent(true)
-        setCodeError("")
-        setSentCode("sent")
-        // Twilio ayarlanmamissa dev modda kodu goster
-        if (data.devCode) {
-          alert("(Test Modu) Do\u011frulama kodunuz: " + data.devCode)
-        }
+      setupRecaptcha()
+      const appVerifier = (window as Record<string, unknown>).recaptchaVerifier as RecaptchaVerifier
+      const phoneNumber = "+90" + senderTelefon.replace(/\s/g, "")
+      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+      setConfirmationResult(result)
+      setIsCodeSent(true)
+      setCodeError("")
+      setSentCode("sent")
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : ""
+      if (errorMsg.includes("too-many-requests")) {
+        setPhoneError("Çok fazla deneme yaptınız, lütfen bekleyin")
+      } else if (errorMsg.includes("invalid-phone-number")) {
+        setPhoneError("Geçersiz telefon numarası")
       } else {
-        setPhoneError(data.error || "SMS g\u00f6nderilemedi, tekrar deneyin")
+        setPhoneError("SMS gönderilemedi, tekrar deneyin")
       }
-    } catch {
-      setPhoneError("SMS g\u00f6nderilemedi, tekrar deneyin")
+      // Recaptcha'yi sifirla
+      if ((window as Record<string, unknown>).recaptchaVerifier) {
+        try {
+          (((window as Record<string, unknown>).recaptchaVerifier) as RecaptchaVerifier).clear()
+        } catch { /* ignore */ }
+        (window as Record<string, unknown>).recaptchaVerifier = undefined
+      }
     } finally {
       setSmsSending(false)
     }
   }
 
   const handleVerifyCode = async () => {
-    if (!dogrulamaKodu || dogrulamaKodu.length < 4) {
-      setCodeError("4 haneli kodu girin")
+    if (!dogrulamaKodu || dogrulamaKodu.length < 6) {
+      setCodeError("6 haneli kodu girin")
+      return
+    }
+    if (!confirmationResult) {
+      setCodeError("\u00d6nce kod g\u00f6nderin")
       return
     }
     setSmsVerifying(true)
     try {
-      const res = await fetch("/api/sms/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telefon: senderTelefon.replace(/\s/g, ""),
-          kod: dogrulamaKodu,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setIsCodeVerified(true)
-        setCodeError("")
-      } else {
-        setCodeError(data.error || "Kod hatal\u0131, tekrar deneyin")
-        setIsCodeVerified(false)
-      }
+      await confirmationResult.confirm(dogrulamaKodu)
+      setIsCodeVerified(true)
+      setCodeError("")
     } catch {
-      setCodeError("Do\u011frulama ba\u015far\u0131s\u0131z, tekrar deneyin")
+      setCodeError("Kod hatal\u0131, tekrar deneyin")
       setIsCodeVerified(false)
     } finally {
       setSmsVerifying(false)
@@ -267,6 +276,8 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   }
 
   return (
+    <>
+    <div id="recaptcha-container" />
     <div
       className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 transition-all duration-300 ease-out ${
         isVisible && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
@@ -365,18 +376,18 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                     placeholder="Doğrulama Kodu"
                     value={dogrulamaKodu}
                     onChange={(e) => {
-                      setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 6))
                       setCodeError("")
                     }}
                     disabled={!isCodeSent}
                     className={`flex-1 border-border bg-background transition-colors ${
                       isCodeVerified ? "border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : ""
                     }`}
-                    maxLength={4}
+                    maxLength={6}
                   />
   <button
   onClick={handleVerifyCode}
-  disabled={!isCodeSent || dogrulamaKodu.length < 4 || smsVerifying}
+  disabled={!isCodeSent || dogrulamaKodu.length < 6 || smsVerifying}
                     className={`flex h-9 w-9 items-center justify-center rounded-md border transition-all ${
                       isCodeVerified
                         ? "border-emerald-500 bg-emerald-500 text-white"
@@ -574,5 +585,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
         </div>
       </div>
     </div>
+    </>
   )
 }

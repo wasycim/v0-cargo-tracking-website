@@ -327,7 +327,8 @@ export default function Page() {
         }
 
         if (smsNumaralari.length > 0) {
-          const mesaj = `${cargo.to}\n${data.firma}\n${data.plaka}\n${data.aracTelefon ? data.aracTelefon : ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
+          const aliciSehir = (cargo.toCity || cargo.to.split("/").pop()?.trim() || "").toUpperCase()
+          const mesaj = `${aliciSehir} KARGOSU\n${data.firma}\n${data.plaka}\n${data.aracTelefon || ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
 
           fetch("/api/sms/notify", {
             method: "POST",
