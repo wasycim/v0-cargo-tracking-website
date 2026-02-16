@@ -346,9 +346,32 @@ export default function Page() {
       setCargos((prev) => prev.map((c) => (c.id === cargoId ? { ...c, ...data } : c)))
       updateCargoDB(cargoId, data)
       setEditingCargo(null)
-      showToast("Kargo bilgileri güncellendi")
+      showToast("Kargo bilgileri g\u00fcncellendi")
+
+      // Arac bilgileri guncellendiyse WhatsApp bildirim gonder
+      const aracGuncellendi = data.firma || data.plate || data.departureTime || data.arrivalTime || data.aracTelefon
+      if (aracGuncellendi) {
+        const cargo = cargos.find((c) => c.id === cargoId)
+        if (cargo) {
+          const merged = { ...cargo, ...data }
+          const telefonlar: string[] = []
+          const tip = merged.gonderimTipi || "ah"
+          if ((tip === "ah" || tip === "agh") && merged.receiverTelefon) telefonlar.push(merged.receiverTelefon)
+          if ((tip === "gh" || tip === "agh") && merged.senderTelefon) telefonlar.push(merged.senderTelefon)
+
+          if (telefonlar.length > 0) {
+            const sehir = (merged.toCity || merged.to.split("/").pop()?.trim() || "").toUpperCase()
+            const mesaj = `${sehir} KARGOSU (G\u00dcNCELLEME)\n${merged.firma || ""}\n${merged.plate || ""}\n${merged.aracTelefon || ""}\nKALKIS: ${merged.departureTime || ""}\nVARIS: ${merged.arrivalTime || ""}`
+            fetch("/api/sms/notify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ telefonlar, mesaj }),
+            }).catch(() => {})
+          }
+        }
+      }
     },
-    [showToast, updateCargoDB]
+    [showToast, updateCargoDB, cargos]
   )
 
   const handleCancelCargo = useCallback(
