@@ -107,30 +107,6 @@ export default function Page() {
     loadCustomers()
   }, [isLoggedIn, kullanici?.sube])
 
-  // Varis saati gecen kargolari otomatik "gonderildi" yap
-  useEffect(() => {
-    const checkExpired = () => {
-      const now = new Date()
-      setCargos((prev) => prev.map((c) => {
-        if (c.status !== "giden") return c
-        if (!c.arrivalDate || !c.arrivalTime) return c
-        // arrivalDate "DD.MM.YYYY", arrivalTime "HH:MM"
-        const parts = c.arrivalDate.split(".")
-        if (parts.length !== 3) return c
-        const [hh, mm] = c.arrivalTime.split(":").map(Number)
-        const arrivalDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), hh || 23, mm || 59)
-        if (now > arrivalDate) {
-          updateCargoDB(c.id, { status: "gonderildi" })
-          return { ...c, status: "gonderildi" as const }
-        }
-        return c
-      }))
-    }
-    checkExpired()
-    const interval = setInterval(checkExpired, 60000) // Her dakika kontrol
-    return () => clearInterval(interval)
-  }, [cargos.length, updateCargoDB])
-
   // Load sube ayarlar
   useEffect(() => {
     if (!isLoggedIn || !kullanici?.sube) return
@@ -220,6 +196,41 @@ export default function Page() {
       })
     } catch { /* ignore */ }
   }, [])
+
+  // Varis saati gecen kargolari otomatik "gonderildi" yap - sadece interval ile
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const checkExpired = () => {
+      const now = new Date()
+      setCargos((prev) => {
+        let changed = false
+        const updated = prev.map((c) => {
+          if (c.status !== "giden") return c
+          if (!c.arrivalDate || !c.arrivalTime) return c
+          const parts = c.arrivalDate.split(".")
+          if (parts.length !== 3) return c
+          const [hh, mm] = c.arrivalTime.split(":").map(Number)
+          const arrDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), hh || 23, mm || 59)
+          if (now > arrDate) {
+            changed = true
+            // DB update fire-and-forget
+            fetch("/api/kargolar", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: c.id, status: "gonderildi" }),
+            }).catch(() => {})
+            return { ...c, status: "gonderildi" as const }
+          }
+          return c
+        })
+        return changed ? updated : prev
+      })
+    }
+    // Ilk kontrol 2sn sonra (kargolar yuklensin)
+    const timeout = setTimeout(checkExpired, 2000)
+    const interval = setInterval(checkExpired, 60000)
+    return () => { clearTimeout(timeout); clearInterval(interval) }
+  }, [isLoggedIn])
 
   const handleNewCargoSubmit = useCallback(async (newCargo: Cargo) => {
     // Add to local state immediately with temp id
