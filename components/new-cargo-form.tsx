@@ -19,11 +19,12 @@ interface NewCargoFormProps {
   onCustomerSaved?: (customer: { tc: string; ad: string; soyad: string; telefon: string; email?: string }) => void
   savedCustomers?: Array<{ tc: string; ad: string; soyad: string; telefon: string; email?: string }>
   kullaniciSube?: string
+  subeKodu?: string
 }
 
 type PackageType = "dosya" | "paket" | "koli" | "cuval"
 
-export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomers = [], kullaniciSube }: NewCargoFormProps) {
+export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomers = [], kullaniciSube, subeKodu }: NewCargoFormProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [packageType, setPackageType] = useState<PackageType>("dosya")
@@ -98,7 +99,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       const res = await fetch("/api/sms/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telefon: senderTelefon.replace(/\s/g, "") }),
+        body: JSON.stringify({ telefon: senderTelefon.replace(/\s/g, ""), sube_kodu: subeKodu }),
       })
       const data = await res.json()
       if (data.success) {

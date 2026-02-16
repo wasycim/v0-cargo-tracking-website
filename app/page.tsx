@@ -336,12 +336,12 @@ export default function Page() {
           fetch("/api/sms/notify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telefonlar: smsNumaralari, mesaj }),
+            body: JSON.stringify({ telefonlar: smsNumaralari, mesaj, sube_kodu: kullanici?.sube_kodu }),
           }).catch(() => {})
         }
       }
     },
-    [showToast, updateCargoDB, cargos]
+    [showToast, updateCargoDB, cargos, kullanici]
   )
 
   const handleEditSubmit = useCallback(
@@ -368,13 +368,13 @@ export default function Page() {
             fetch("/api/sms/notify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ telefonlar, mesaj }),
+              body: JSON.stringify({ telefonlar, mesaj, sube_kodu: kullanici?.sube_kodu }),
             }).catch(() => {})
           }
         }
       }
     },
-    [showToast, updateCargoDB, cargos]
+    [showToast, updateCargoDB, cargos, kullanici]
   )
 
   const handleCancelCargo = useCallback(
@@ -496,6 +496,7 @@ export default function Page() {
           onCustomerSaved={handleCustomerSavedFromForm}
           savedCustomers={savedCustomers}
           kullaniciSube={kullanici?.sube}
+          subeKodu={kullanici?.sube_kodu}
         />
       )}
 

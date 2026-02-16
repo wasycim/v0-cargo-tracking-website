@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(req: Request) {
   try {
-    const { telefonlar, mesaj } = await req.json()
+    const { telefonlar, mesaj, sube_kodu } = await req.json()
 
     if (!telefonlar || !Array.isArray(telefonlar) || telefonlar.length === 0 || !mesaj) {
       return NextResponse.json({ error: "Eksik parametreler" }, { status: 400 })
@@ -18,6 +18,7 @@ export async function POST(req: Request) {
       message: mesaj,
       message_type: "notification",
       status: "pending",
+      sube_kodu: sube_kodu || null,
     }))
 
     const { error } = await supabase.from("whatsapp_messages").insert(inserts)

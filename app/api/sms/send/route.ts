@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(req: Request) {
   try {
-    const { telefon } = await req.json()
+    const { telefon, sube_kodu } = await req.json()
     if (!telefon) {
       return NextResponse.json({ error: "Telefon numarasi gerekli" }, { status: 400 })
     }
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         phone_number: cleanPhone,
         otp_code: code,
         status: "pending",
+        sube_kodu: sube_kodu || null,
       })
 
     if (error) {

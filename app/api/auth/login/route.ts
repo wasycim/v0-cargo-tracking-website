@@ -36,6 +36,7 @@ export async function POST(request: Request) {
         soyad: data.soyad,
         telefon: data.telefon,
         sube: data.sube,
+        sube_kodu: data.sube_kodu || "",
       },
     })
   } catch {
