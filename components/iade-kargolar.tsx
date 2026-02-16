@@ -24,15 +24,12 @@ function parseDDMMYYYY(dateStr: string): Date | null {
 }
 
 export function IadeKargolar({ cargos }: IadeKargolarProps) {
-  const oneMonthAgo = new Date()
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
   const today = new Date().toISOString().split("T")[0]
-  const monthAgoStr = oneMonthAgo.toISOString().split("T")[0]
 
-  const [startDate, setStartDate] = useState(monthAgoStr)
+  const [startDate, setStartDate] = useState(today)
   const [endDate, setEndDate] = useState(today)
   const [searchText, setSearchText] = useState("")
-  const [queryDates, setQueryDates] = useState({ start: monthAgoStr, end: today })
+  const [queryDates, setQueryDates] = useState({ start: today, end: today })
 
   const handleSorgula = () => {
     setQueryDates({ start: startDate, end: endDate })
@@ -46,7 +43,11 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
 
     let result = cargos.filter((c) => {
       if (c.status !== "iptal") return false
-      if (!c.departureDate) return false
+      if (!c.departureDate) {
+        if (!c.createdAt) return false
+        const d = new Date(c.createdAt)
+        return d >= start && d <= end
+      }
       const d = parseDDMMYYYY(c.departureDate)
       if (!d) return false
       return d >= start && d <= end
@@ -67,7 +68,6 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
 
   return (
     <div>
-      {/* Kriterler */}
       <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-2">
           <span className="text-sm font-medium text-muted-foreground">Kriterler</span>
@@ -75,11 +75,11 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
         <div className="p-5">
           <div className="mb-4 flex flex-wrap gap-4">
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Başlangıç Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{"Ba\u015flang\u0131\u00e7 Tarihi"}</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border-border bg-background" />
             </div>
             <div className="min-w-[200px] flex-1">
-              <label className="mb-1 block text-xs text-muted-foreground">Bitiş Tarihi</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{"Biti\u015f Tarihi"}</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border-border bg-background" />
             </div>
           </div>
@@ -95,17 +95,15 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
         </div>
       </div>
 
-      {/* Search + Table */}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Arama: Tüm Metin Sütunları"
+            placeholder={"Arama: T\u00fcm Metin S\u00fctunlar\u0131"}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className="h-8 w-48 border-border bg-background text-xs"
           />
-          <button className="rounded border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted">Git</button>
         </div>
 
         <div className="overflow-x-auto">
@@ -114,8 +112,8 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
               <TableRow className="bg-muted/50">
                 <TableHead className="font-semibold text-foreground">Takip No</TableHead>
                 <TableHead className="font-semibold text-foreground">Tarih</TableHead>
-                <TableHead className="font-semibold text-foreground">Gönderici</TableHead>
-                <TableHead className="font-semibold text-foreground">Alıcı</TableHead>
+                <TableHead className="font-semibold text-foreground">{"G\u00f6nderici"}</TableHead>
+                <TableHead className="font-semibold text-foreground">{"Al\u0131c\u0131"}</TableHead>
                 <TableHead className="font-semibold text-foreground">Nereden</TableHead>
                 <TableHead className="font-semibold text-foreground">Nereye</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Tutar</TableHead>
@@ -125,7 +123,7 @@ export function IadeKargolar({ cargos }: IadeKargolarProps) {
               {iptalCargos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                    Seçilen tarih aralığında iptal kargo bulunamadı.
+                    {"Se\u00e7ilen tarih aral\u0131\u011f\u0131nda iptal kargo bulunamad\u0131."}
                   </TableCell>
                 </TableRow>
               ) : (

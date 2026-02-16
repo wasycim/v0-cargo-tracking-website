@@ -236,7 +236,7 @@ function MusteriAraModal({ onClose, customers }: { onClose: () => void; customer
           </div>
           <div className="p-5">
             <div className="mb-3 flex gap-3">
-              <Input placeholder="T.C. Kimlik No" value={searchTc} onChange={(e) => setSearchTc(e.target.value.replace(/\D/g, ""))} className="border-border bg-background" />
+              <Input placeholder="T.C. Kimlik No" value={searchTc} onChange={(e) => setSearchTc(e.target.value.replace(/\D/g, "").slice(0, 11))} maxLength={11} className="border-border bg-background" />
               <Input placeholder="Telefon" value={searchTel} onChange={(e) => setSearchTel(e.target.value.replace(/\D/g, ""))} className="border-border bg-background" />
             </div>
             <button onClick={handleSearch} className="mb-4 flex w-full items-center justify-center gap-2 rounded-md bg-cargo-dark py-2.5 text-sm font-semibold text-white transition-colors hover:bg-cargo-green">

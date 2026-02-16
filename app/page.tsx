@@ -54,6 +54,7 @@ export default function Page() {
   const [cargos, setCargos] = useState<Cargo[]>([])
   const [filters, setFilters] = useState({
     giden: true,
+    gonderildi: false,
     eskiAktif: false,
     iptal: false,
   })
@@ -139,22 +140,30 @@ export default function Page() {
     setSubeAyarlar(null)
   }, [])
 
+  // Aktif kargolar
   const filteredCargos = useMemo(() => {
     const now = new Date()
-    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     return cargos.filter((cargo) => {
+      // "Eski Kargolari Goruntule" kapali ise sadece bugun olusturulanlari goster
       if (!filters.eskiAktif && cargo.createdAt) {
         const created = new Date(cargo.createdAt)
-        if (created < oneMonthAgo) return false
+        if (created < todayStart) return false
       }
       if (cargo.status === "yuklenecek") return true
-      if (cargo.status === "giden" && !filters.giden) return false
-      if (cargo.status === "iptal" && !filters.iptal) return false
-      if (cargo.status === "teslim") return false
-      return true
+      if (cargo.status === "giden") return filters.giden
+      if (cargo.status === "gonderildi") return filters.gonderildi
+      if (cargo.status === "iptal") return filters.iptal
+      // teslim ana listede gosterilmez
+      return false
     })
   }, [filters, cargos])
+
+  // Gonderilen kargolar
+  const gonderildiCargos = useMemo(() => {
+    return cargos.filter((c) => c.status === "gonderildi")
+  }, [cargos])
 
   const handleFilterChange = (key: string, value: boolean) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
@@ -190,6 +199,41 @@ export default function Page() {
       })
     } catch { /* ignore */ }
   }, [])
+
+  // Varis saati gecen kargolari otomatik "gonderildi" yap - sadece interval ile
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const checkExpired = () => {
+      const now = new Date()
+      setCargos((prev) => {
+        let changed = false
+        const updated = prev.map((c) => {
+          if (c.status !== "giden") return c
+          if (!c.arrivalDate || !c.arrivalTime) return c
+          const parts = c.arrivalDate.split(".")
+          if (parts.length !== 3) return c
+          const [hh, mm] = c.arrivalTime.split(":").map(Number)
+          const arrDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), hh || 23, mm || 59)
+          if (now > arrDate) {
+            changed = true
+            // DB update fire-and-forget
+            fetch("/api/kargolar", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: c.id, status: "gonderildi" }),
+            }).catch(() => {})
+            return { ...c, status: "gonderildi" as const }
+          }
+          return c
+        })
+        return changed ? updated : prev
+      })
+    }
+    // Ilk kontrol 2sn sonra (kargolar yuklensin)
+    const timeout = setTimeout(checkExpired, 2000)
+    const interval = setInterval(checkExpired, 60000)
+    return () => { clearTimeout(timeout); clearInterval(interval) }
+  }, [isLoggedIn])
 
   const handleNewCargoSubmit = useCallback(async (newCargo: Cargo) => {
     // Add to local state immediately with temp id
@@ -269,9 +313,35 @@ export default function Page() {
       setCargos((prev) => prev.map((c) => c.id === cargoId ? { ...c, ...updates } : c))
       updateCargoDB(cargoId, updates)
       setLoadingCargo(null)
-      showToast("Kargo yüklendi")
+      showToast("Kargo y\u00fcklendi")
+
+      // Gonderim tipine gore SMS bildirim gonder
+      const cargo = cargos.find((c) => c.id === cargoId)
+      if (cargo) {
+        const smsNumaralari: string[] = []
+        const tip = cargo.gonderimTipi || "ah"
+
+        // ah = alici haberli, gh = gonderici haberli, agh = her ikisi
+        if ((tip === "ah" || tip === "agh") && cargo.receiverTelefon) {
+          smsNumaralari.push(cargo.receiverTelefon)
+        }
+        if ((tip === "gh" || tip === "agh") && cargo.senderTelefon) {
+          smsNumaralari.push(cargo.senderTelefon)
+        }
+
+        if (smsNumaralari.length > 0) {
+          const aliciSehir = (cargo.toCity || cargo.to.split("/").pop()?.trim() || "").toUpperCase()
+          const mesaj = `${aliciSehir} KARGOSU\n${data.firma}\n${data.plaka}\n${data.aracTelefon || ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
+
+          fetch("/api/sms/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telefonlar: smsNumaralari, mesaj }),
+          }).catch(() => {})
+        }
+      }
     },
-    [showToast, updateCargoDB]
+    [showToast, updateCargoDB, cargos]
   )
 
   const handleEditSubmit = useCallback(
@@ -279,9 +349,32 @@ export default function Page() {
       setCargos((prev) => prev.map((c) => (c.id === cargoId ? { ...c, ...data } : c)))
       updateCargoDB(cargoId, data)
       setEditingCargo(null)
-      showToast("Kargo bilgileri güncellendi")
+      showToast("Kargo bilgileri g\u00fcncellendi")
+
+      // Arac bilgileri guncellendiyse WhatsApp bildirim gonder
+      const aracGuncellendi = data.firma || data.plate || data.departureTime || data.arrivalTime || data.aracTelefon
+      if (aracGuncellendi) {
+        const cargo = cargos.find((c) => c.id === cargoId)
+        if (cargo) {
+          const merged = { ...cargo, ...data }
+          const telefonlar: string[] = []
+          const tip = merged.gonderimTipi || "ah"
+          if ((tip === "ah" || tip === "agh") && merged.receiverTelefon) telefonlar.push(merged.receiverTelefon)
+          if ((tip === "gh" || tip === "agh") && merged.senderTelefon) telefonlar.push(merged.senderTelefon)
+
+          if (telefonlar.length > 0) {
+            const sehir = (merged.toCity || merged.to.split("/").pop()?.trim() || "").toUpperCase()
+            const mesaj = `${sehir} KARGOSU (G\u00dcNCELLEME)\n${merged.firma || ""}\n${merged.plate || ""}\n${merged.aracTelefon || ""}\nKALKIS: ${merged.departureTime || ""}\nVARIS: ${merged.arrivalTime || ""}`
+            fetch("/api/sms/notify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ telefonlar, mesaj }),
+            }).catch(() => {})
+          }
+        }
+      }
     },
-    [showToast, updateCargoDB]
+    [showToast, updateCargoDB, cargos]
   )
 
   const handleCancelCargo = useCallback(
@@ -343,11 +436,28 @@ export default function Page() {
             </button>
           </div>
 
-          <StatusSummary cargos={cargos} kasaTutari={kasaTutari} />
+          <StatusSummary cargos={cargos} kasaTutari={kasaTutari} onNavigate={setActivePage} />
           <FilterBar filters={filters} onFilterChange={handleFilterChange} />
           <CargoTable
             cargos={filteredCargos}
             onLoadCargo={handleLoadCargo}
+            onEditCargo={setEditingCargo}
+            onToast={(msg) => showToast(msg)}
+            kullaniciSube={kullanici?.sube}
+            subeAyarlar={subeAyarlar}
+          />
+        </>
+      )}
+
+      {activePage === "gonderilenler" && (
+        <>
+          <div className="border-b border-border bg-card px-4 py-3">
+            <h2 className="text-lg font-bold text-foreground">
+              {"G\u00f6nderilen Kargolar"} <span className="ml-2 text-sm font-normal text-muted-foreground">({gonderildiCargos.length} adet)</span>
+            </h2>
+          </div>
+          <CargoTable
+            cargos={gonderildiCargos}
             onEditCargo={setEditingCargo}
             onToast={(msg) => showToast(msg)}
             kullaniciSube={kullanici?.sube}

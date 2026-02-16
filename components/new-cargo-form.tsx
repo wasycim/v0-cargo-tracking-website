@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, Send, UserPlus, Eraser, Check, AlertCircle, Percent } from "lucide-react"
+import { X, Send, UserPlus, Eraser, Check, AlertCircle, Percent, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -84,26 +84,65 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     return /^5\d{9}$/.test(cleaned)
   }
 
-  const handleSendCode = () => {
+  const [smsSending, setSmsSending] = useState(false)
+  const [smsVerifying, setSmsVerifying] = useState(false)
+
+  const handleSendCode = async () => {
     setPhoneError("")
     if (!validatePhone(senderTelefon)) {
       setPhoneError("Ge\u00e7erli bir telefon numaras\u0131 girin (5XX XXX XX XX)")
       return
     }
-    const code = String(Math.floor(1000 + Math.random() * 9000))
-    setSentCode(code)
-    setIsCodeSent(true)
-    setCodeError("")
-    alert("Do\u011frulama kodu g\u00f6nderildi: " + code)
+    setSmsSending(true)
+    try {
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefon: senderTelefon.replace(/\s/g, "") }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsCodeSent(true)
+        setCodeError("")
+        setSentCode("sent")
+      } else {
+        setPhoneError(data.error || "Kod g\u00f6nderilemedi, tekrar deneyin")
+      }
+    } catch {
+      setPhoneError("Kod g\u00f6nderilemedi, tekrar deneyin")
+    } finally {
+      setSmsSending(false)
+    }
   }
 
-  const handleVerifyCode = () => {
-    if (dogrulamaKodu === sentCode) {
-      setIsCodeVerified(true)
-      setCodeError("")
-    } else {
-      setCodeError("Kod hatal\u0131, tekrar deneyin")
+  const handleVerifyCode = async () => {
+    if (!dogrulamaKodu || dogrulamaKodu.length < 6) {
+      setCodeError("6 haneli kodu girin")
+      return
+    }
+    setSmsVerifying(true)
+    try {
+      const res = await fetch("/api/sms/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefon: senderTelefon.replace(/\s/g, ""),
+          kod: dogrulamaKodu,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsCodeVerified(true)
+        setCodeError("")
+      } else {
+        setCodeError(data.error || "Kod hatal\u0131, tekrar deneyin")
+        setIsCodeVerified(false)
+      }
+    } catch {
+      setCodeError("Do\u011frulama ba\u015far\u0131s\u0131z, tekrar deneyin")
       setIsCodeVerified(false)
+    } finally {
+      setSmsVerifying(false)
     }
   }
 
@@ -215,6 +254,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       arrivalDate: "",
       arrivalTime: "",
       plate: "",
+      gonderimTipi: gonderimTipi,
       createdAt: now.toISOString(),
     }
 
@@ -223,6 +263,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   }
 
   return (
+    <>
     <div
       className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 transition-all duration-300 ease-out ${
         isVisible && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
@@ -304,10 +345,10 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                       className={`flex-1 border-border bg-background ${phoneError ? "border-destructive" : ""}`}
                       maxLength={10}
                     />
-                    <button onClick={handleSendCode} className="flex items-center gap-2 whitespace-nowrap rounded-md bg-cargo-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-green">
-                      <Send className="h-3.5 w-3.5" />
-                      Kod Gönder
-                    </button>
+<button onClick={handleSendCode} disabled={smsSending} className="flex items-center gap-2 whitespace-nowrap rounded-md bg-cargo-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cargo-green disabled:opacity-50">
+  {smsSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+  {smsSending ? "G\u00f6nderiliyor..." : "Kod G\u00f6nder"}
+  </button>
                   </div>
                   {phoneError && (
                     <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
@@ -321,18 +362,18 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                     placeholder="Doğrulama Kodu"
                     value={dogrulamaKodu}
                     onChange={(e) => {
-                      setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      setDogrulamaKodu(e.target.value.replace(/\D/g, "").slice(0, 6))
                       setCodeError("")
                     }}
                     disabled={!isCodeSent}
                     className={`flex-1 border-border bg-background transition-colors ${
                       isCodeVerified ? "border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : ""
                     }`}
-                    maxLength={4}
+                    maxLength={6}
                   />
-                  <button
-                    onClick={handleVerifyCode}
-                    disabled={!isCodeSent || dogrulamaKodu.length < 4}
+  <button
+  onClick={handleVerifyCode}
+  disabled={!isCodeSent || dogrulamaKodu.length < 6 || smsVerifying}
                     className={`flex h-9 w-9 items-center justify-center rounded-md border transition-all ${
                       isCodeVerified
                         ? "border-emerald-500 bg-emerald-500 text-white"
@@ -340,7 +381,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                     }`}
                     aria-label="Dogrula"
                   >
-                    <Check className="h-4 w-4" />
+                    {smsVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   </button>
                 </div>
                 {isCodeVerified && (
@@ -530,5 +571,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
         </div>
       </div>
     </div>
+    </>
   )
 }
