@@ -236,7 +236,7 @@ Parca adedi kac ise o kadar ayri barkod etiketi basilir:
 
 ### Telefon Maskeleme
 Gizlilik icin telefon numaralari barkod etiketinde maskelenir:
-- `5551234567` -> `(555) 1** ** 67`
+- `5555555555` -> `(555) 5** ** 55`
 
 ---
 
@@ -417,9 +417,9 @@ Sisteme giris yapmak icin asagidaki test kullanicisini kullanabilirsiniz:
 
 | Alan | Deger |
 |------|-------|
-| TC Kimlik No | `25576219670` |
+| TC Kimlik No | `11111111111` |
 | Sifre | `123456` |
-| Ad Soyad | Burak YILMAZ |
+| Ad Soyad | Yiğit Çalışkan |
 | Sube | Gebze |
 
 ---
