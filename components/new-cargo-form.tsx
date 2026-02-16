@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { X, Send, UserPlus, Eraser, Check, AlertCircle, Percent, Loader2 } from "lucide-react"
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/lib/firebase"
-import type { ConfirmationResult } from "@/lib/firebase"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -88,27 +86,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
   const [smsSending, setSmsSending] = useState(false)
   const [smsVerifying, setSmsVerifying] = useState(false)
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
-
-  const getRecaptchaVerifier = useCallback(() => {
-    if (typeof window === "undefined") return null
-    // Eski recaptcha varsa temizle
-    const existing = (window as Record<string, unknown>).recaptchaVerifier
-    if (existing) {
-      try { (existing as { clear?: () => void }).clear?.() } catch { /* ignore */ }
-      (window as Record<string, unknown>).recaptchaVerifier = undefined
-    }
-    // Eski container'i temizle, yenisini olustur
-    const oldContainer = document.getElementById("recaptcha-container")
-    if (oldContainer) oldContainer.innerHTML = ""
-    // Yeni RecaptchaVerifier olustur
-    const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-      callback: () => {},
-    })
-    ;(window as Record<string, unknown>).recaptchaVerifier = verifier
-    return verifier
-  }, [])
 
   const handleSendCode = async () => {
     setPhoneError("")
@@ -118,34 +95,24 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     }
     setSmsSending(true)
     try {
-      const appVerifier = getRecaptchaVerifier()
-      if (!appVerifier) {
-        setPhoneError("Sayfa hatas\u0131, l\u00fctfen yenileyin")
-        setSmsSending(false)
-        return
-      }
-      const phoneNumber = "+90" + senderTelefon.replace(/\s/g, "")
-      console.log("[v0] Sending OTP to:", phoneNumber)
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier)
-      console.log("[v0] OTP sent successfully")
-      setConfirmationResult(result)
-      setIsCodeSent(true)
-      setCodeError("")
-      setSentCode("sent")
-    } catch (err: unknown) {
-      console.log("[v0] Firebase OTP error:", err)
-      const errorMsg = err instanceof Error ? err.message : String(err)
-      if (errorMsg.includes("too-many-requests")) {
-        setPhoneError("\u00c7ok fazla deneme yapt\u0131n\u0131z, l\u00fctfen bekleyin")
-      } else if (errorMsg.includes("invalid-phone-number")) {
-        setPhoneError("Ge\u00e7ersiz telefon numaras\u0131")
-      } else if (errorMsg.includes("auth/operation-not-allowed")) {
-        setPhoneError("Telefon do\u011frulama etkin de\u011fil. Firebase Console'dan etkinle\u015ftirin.")
-      } else if (errorMsg.includes("missing-client-identifier") || errorMsg.includes("captcha-check-failed")) {
-        setPhoneError("Captcha do\u011frulama ba\u015far\u0131s\u0131z, sayfay\u0131 yenileyip tekrar deneyin")
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefon: senderTelefon.replace(/\s/g, "") }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsCodeSent(true)
+        setCodeError("")
+        setSentCode("sent")
+        if (data.devCode) {
+          alert("Do\u011frulama kodunuz: " + data.devCode)
+        }
       } else {
-        setPhoneError("SMS g\u00f6nderilemedi: " + errorMsg.slice(0, 100))
+        setPhoneError(data.error || "Kod g\u00f6nderilemedi, tekrar deneyin")
       }
+    } catch {
+      setPhoneError("Kod g\u00f6nderilemedi, tekrar deneyin")
     } finally {
       setSmsSending(false)
     }
@@ -156,17 +123,26 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       setCodeError("6 haneli kodu girin")
       return
     }
-    if (!confirmationResult) {
-      setCodeError("\u00d6nce kod g\u00f6nderin")
-      return
-    }
     setSmsVerifying(true)
     try {
-      await confirmationResult.confirm(dogrulamaKodu)
-      setIsCodeVerified(true)
-      setCodeError("")
+      const res = await fetch("/api/sms/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefon: senderTelefon.replace(/\s/g, ""),
+          kod: dogrulamaKodu,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setIsCodeVerified(true)
+        setCodeError("")
+      } else {
+        setCodeError(data.error || "Kod hatal\u0131, tekrar deneyin")
+        setIsCodeVerified(false)
+      }
     } catch {
-      setCodeError("Kod hatal\u0131, tekrar deneyin")
+      setCodeError("Do\u011frulama ba\u015far\u0131s\u0131z, tekrar deneyin")
       setIsCodeVerified(false)
     } finally {
       setSmsVerifying(false)
@@ -291,7 +267,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
   return (
     <>
-    <div id="recaptcha-container" />
     <div
       className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 transition-all duration-300 ease-out ${
         isVisible && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
