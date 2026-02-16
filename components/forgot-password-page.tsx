@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Phone, ArrowLeft } from "lucide-react"
+import { User, Phone, ArrowLeft, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 interface ForgotPasswordPageProps {
@@ -10,39 +10,47 @@ interface ForgotPasswordPageProps {
 
 export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
   const [tcNo, setTcNo] = useState("")
-  const [gsm, setGsm] = useState("")
-  const [gsmSon4, setGsmSon4] = useState("")
+  const [telefon, setTelefon] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setError("")
     setMessage("")
 
-    if (!tcNo || !gsm || !gsmSon4) {
-      setError("Lütfen tüm alanları doldurun")
+    if (!tcNo || !telefon) {
+      setError("L\u00fctfen t\u00fcm alanlar\u0131 doldurun")
       return
     }
     if (tcNo.length !== 11) {
-      setError("TC Kimlik No 11 haneli olmalıdır")
+      setError("TC Kimlik No 11 haneli olmal\u0131d\u0131r")
       return
     }
-    if (gsm.length !== 10) {
-      setError("GSM numarası 10 haneli olmalıdır")
-      return
-    }
-    if (gsmSon4.length !== 4) {
-      setError("Son 4 rakam giriniz")
+    if (telefon.length < 10) {
+      setError("Ge\u00e7erli bir telefon numaras\u0131 girin")
       return
     }
 
-    const actualLast4 = gsm.slice(-4)
-    if (gsmSon4 !== actualLast4) {
-      setError("GSM numarasının son 4 hanesi uyuşmuyor")
-      return
-    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tc_no: tcNo, telefon }),
+      })
+      const data = await res.json()
 
-    setMessage("Şifre sıfırlama bilgileri SMS olarak gönderildi.")
+      if (data.success) {
+        setMessage("\u015eifreniz WhatsApp \u00fczerinden telefonunuza g\u00f6nderildi.")
+      } else {
+        setError(data.error || "Bir hata olu\u015ftu, tekrar deneyin")
+      }
+    } catch {
+      setError("Sunucu hatas\u0131, tekrar deneyin")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -50,7 +58,10 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
       <div className="w-full max-w-sm">
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
           <div className="px-6 py-5">
-            <h1 className="text-center text-lg font-bold text-foreground">Şifre Sıfırlama</h1>
+            <h1 className="text-center text-lg font-bold text-foreground">{"\u015eifre S\u0131f\u0131rlama"}</h1>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              {"Bilgilerinizi girin, \u015fifreniz WhatsApp'\u0131n\u0131za g\u00f6nderilecek"}
+            </p>
           </div>
 
           <div className="px-6 pb-6">
@@ -67,10 +78,11 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
             )}
 
             <div className="mb-4">
+              <label className="mb-1.5 block text-xs font-medium text-foreground">{"T.C. Kimlik No"}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="T.C. Kimlik No"
+                  placeholder="XXXXXXXXXXX"
                   value={tcNo}
                   onChange={(e) => setTcNo(e.target.value.replace(/\D/g, "").slice(0, 11))}
                   className="border-border bg-background pl-10"
@@ -79,37 +91,28 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
               </div>
             </div>
 
-            <div className="mb-4">
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="GSM (5XX XXX XX XX)"
-                  value={gsm}
-                  onChange={(e) => setGsm(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  className="border-border bg-background pl-10"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
             <div className="mb-5">
+              <label className="mb-1.5 block text-xs font-medium text-foreground">{"Telefon Numaras\u0131"}</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="GSM Numarası Son 4 Rakam"
-                  value={gsmSon4}
-                  onChange={(e) => setGsmSon4(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="5XX XXX XX XX"
+                  value={telefon}
+                  onChange={(e) => setTelefon(e.target.value.replace(/\D/g, "").slice(0, 11))}
                   className="border-border bg-background pl-10"
-                  maxLength={4}
+                  maxLength={11}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleReset() }}
                 />
               </div>
             </div>
 
             <button
               onClick={handleReset}
-              className="w-full rounded-lg bg-cargo-green py-3 text-sm font-bold text-white transition-all hover:bg-cargo-dark active:scale-[0.98]"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-cargo-green py-3 text-sm font-bold text-white transition-all hover:bg-cargo-dark active:scale-[0.98] disabled:opacity-50"
             >
-              Şifre Sıfırla
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? "G\u00f6nderiliyor..." : "WhatsApp ile \u015eifremi G\u00f6nder"}
             </button>
 
             <div className="mt-4 text-center">
@@ -118,7 +121,7 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
                 className="mx-auto flex items-center justify-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Giriş Sayfasına Geri Dön
+                {"Giri\u015f Sayfas\u0131na Geri D\u00f6n"}
               </button>
             </div>
           </div>
