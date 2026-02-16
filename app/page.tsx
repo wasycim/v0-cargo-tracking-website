@@ -433,7 +433,7 @@ export default function Page() {
             </button>
           </div>
 
-          <StatusSummary cargos={cargos} kasaTutari={kasaTutari} />
+          <StatusSummary cargos={cargos} kasaTutari={kasaTutari} onNavigate={setActivePage} />
           <FilterBar filters={filters} onFilterChange={handleFilterChange} />
           <CargoTable
             cargos={filteredCargos}
