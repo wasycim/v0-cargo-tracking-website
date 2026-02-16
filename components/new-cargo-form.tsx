@@ -90,14 +90,24 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   const [smsVerifying, setSmsVerifying] = useState(false)
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null)
 
-  const setupRecaptcha = useCallback(() => {
-    if (typeof window === "undefined") return
-    if (!(window as Record<string, unknown>).recaptchaVerifier) {
-      (window as Record<string, unknown>).recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-        callback: () => {},
-      })
+  const getRecaptchaVerifier = useCallback(() => {
+    if (typeof window === "undefined") return null
+    // Eski recaptcha varsa temizle
+    const existing = (window as Record<string, unknown>).recaptchaVerifier
+    if (existing) {
+      try { (existing as { clear?: () => void }).clear?.() } catch { /* ignore */ }
+      (window as Record<string, unknown>).recaptchaVerifier = undefined
     }
+    // Eski container'i temizle, yenisini olustur
+    const oldContainer = document.getElementById("recaptcha-container")
+    if (oldContainer) oldContainer.innerHTML = ""
+    // Yeni RecaptchaVerifier olustur
+    const verifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+      callback: () => {},
+    })
+    ;(window as Record<string, unknown>).recaptchaVerifier = verifier
+    return verifier
   }, [])
 
   const handleSendCode = async () => {
@@ -108,13 +118,12 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     }
     setSmsSending(true)
     try {
-      console.log("[v0] Firebase config:", {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? "SET" : "MISSING",
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? "SET" : "MISSING",
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "SET" : "MISSING",
-      })
-      setupRecaptcha()
-      const appVerifier = (window as Record<string, unknown>).recaptchaVerifier as RecaptchaVerifier
+      const appVerifier = getRecaptchaVerifier()
+      if (!appVerifier) {
+        setPhoneError("Sayfa hatas\u0131, l\u00fctfen yenileyin")
+        setSmsSending(false)
+        return
+      }
       const phoneNumber = "+90" + senderTelefon.replace(/\s/g, "")
       console.log("[v0] Sending OTP to:", phoneNumber)
       const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier)
@@ -137,14 +146,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       } else {
         setPhoneError("SMS g\u00f6nderilemedi: " + errorMsg.slice(0, 100))
       }
-      // Recaptcha'yi sifirla
-      try {
-        const rv = (window as Record<string, unknown>).recaptchaVerifier
-        if (rv && typeof (rv as { clear?: () => void }).clear === "function") {
-          (rv as { clear: () => void }).clear()
-        }
-      } catch { /* ignore */ }
-      (window as Record<string, unknown>).recaptchaVerifier = undefined
     } finally {
       setSmsSending(false)
     }
