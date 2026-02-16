@@ -105,9 +105,6 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
         setIsCodeSent(true)
         setCodeError("")
         setSentCode("sent")
-        if (data.devCode) {
-          alert("Do\u011frulama kodunuz: " + data.devCode)
-        }
       } else {
         setPhoneError(data.error || "Kod g\u00f6nderilemedi, tekrar deneyin")
       }

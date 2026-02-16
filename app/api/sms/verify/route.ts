@@ -11,12 +11,14 @@ export async function POST(req: Request) {
     const supabase = await createClient()
     const cleanPhone = telefon.replace(/\s/g, "")
 
-    // Kodu kontrol et
+    // En son pending veya sent olan kodu bul
     const { data, error } = await supabase
-      .from("sms_kodlari")
+      .from("otp_requests")
       .select("*")
-      .eq("telefon", cleanPhone)
-      .eq("kullanildi", false)
+      .eq("phone_number", cleanPhone)
+      .in("status", ["pending", "sent"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single()
 
     if (error || !data) {
@@ -25,21 +27,18 @@ export async function POST(req: Request) {
 
     // 5 dakika suresi var
     const createdAt = new Date(data.created_at).getTime()
-    const now = Date.now()
-    if (now - createdAt > 5 * 60 * 1000) {
+    if (Date.now() - createdAt > 5 * 60 * 1000) {
+      await supabase.from("otp_requests").update({ status: "expired" }).eq("id", data.id)
       return NextResponse.json({ error: "Kodun suresi doldu, yeni kod gonderin" }, { status: 400 })
     }
 
     // Kodu karsilastir
-    if (data.kod !== kod) {
+    if (data.otp_code !== kod) {
       return NextResponse.json({ error: "Kod hatali, tekrar deneyin" }, { status: 400 })
     }
 
-    // Kodu kullanildi olarak isaretle
-    await supabase
-      .from("sms_kodlari")
-      .update({ kullanildi: true })
-      .eq("telefon", cleanPhone)
+    // Kodu dogrulandi olarak isaretle
+    await supabase.from("otp_requests").update({ status: "verified" }).eq("id", data.id)
 
     return NextResponse.json({ success: true })
   } catch {

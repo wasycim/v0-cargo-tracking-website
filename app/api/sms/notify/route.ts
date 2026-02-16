@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(req: Request) {
   try {
@@ -8,52 +9,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Eksik parametreler" }, { status: 400 })
     }
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER
+    const supabase = await createClient()
 
-    if (!accountSid || !authToken || !fromNumber) {
-      console.log("[v0] Twilio not configured, skipping SMS notify. Message:", mesaj)
-      return NextResponse.json({ success: true, dev: true })
+    // Her numara icin whatsapp_messages tablosuna kayit ekle
+    // Python WhatsApp botu bu tabloyu dinleyip mesajlari atacak
+    const inserts = telefonlar.map((tel: string) => ({
+      phone_number: tel.replace(/\s/g, ""),
+      message: mesaj,
+      message_type: "notification",
+      status: "pending",
+    }))
+
+    const { error } = await supabase.from("whatsapp_messages").insert(inserts)
+
+    if (error) {
+      console.error("WhatsApp mesaj kayit hatasi:", error)
+      return NextResponse.json({ error: "Mesaj kaydedilemedi" }, { status: 500 })
     }
 
-    const results = []
-
-    for (const tel of telefonlar) {
-      const cleanTel = tel.replace(/\s/g, "")
-      const toNumber = cleanTel.startsWith("+90") ? cleanTel : `+90${cleanTel}`
-
-      try {
-        const res = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: "Basic " + btoa(`${accountSid}:${authToken}`),
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              To: toNumber,
-              From: fromNumber,
-              Body: mesaj,
-            }),
-          }
-        )
-
-        if (!res.ok) {
-          const err = await res.json()
-          console.error("[v0] Twilio notify error for", toNumber, ":", err)
-          results.push({ tel, success: false, error: err.message })
-        } else {
-          results.push({ tel, success: true })
-        }
-      } catch (e) {
-        console.error("[v0] Twilio notify fetch error:", e)
-        results.push({ tel, success: false })
-      }
-    }
-
-    return NextResponse.json({ success: true, results })
+    return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: "Sunucu hatasi" }, { status: 500 })
   }
