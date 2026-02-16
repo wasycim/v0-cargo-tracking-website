@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // TC ve telefon ile kullaniciyi bul
     const { data, error } = await supabase
       .from("kullanicilar")
-      .select("ad, soyad, telefon, sifre")
+      .select("ad, soyad, telefon, sifre, sube_kodu")
       .eq("tc_no", tc_no)
       .eq("aktif", true)
       .single()
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
         message: mesaj,
         message_type: "password_reset",
         status: "pending",
+        sube_kodu: data.sube_kodu || null,
       })
 
     if (wpError) {

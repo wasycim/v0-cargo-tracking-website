@@ -1,19 +1,20 @@
 /**
  * Kargo Takip - WhatsApp Bot (Node.js)
  * =====================================
- * Ofis bilgisayarinda arka planda calisir.
- * Supabase'deki otp_requests ve whatsapp_messages tablolarini dinler.
- * Yeni "pending" kayit geldiginde WhatsApp uzerinden mesaj atar.
- *
- * EKRANDA HICBIR TARAYICI ACILMAZ.
- * QR kodu terminalde gosterir, telefonla okutursun, bitti.
+ * Her sube kendi bilgisayarinda bu botu calistirir.
+ * SUBE_KODU ayari ile sadece o subeye ait mesajlari isler.
  *
  * KURULUM:
  * 1. Node.js 18+ yukleyin (nodejs.org)
  * 2. Bu klasorde: npm install
- * 3. node bot.js
- * 4. Terminaldeki QR kodu telefondan okutun (WhatsApp > Bagli Cihazlar > Cihaz Bagla)
- * 5. Bir kere okutunca session kaydedilir, sonraki seferlerde otomatik baglanir.
+ * 3. Asagidaki AYARLAR kismini doldurun
+ * 4. node bot.js
+ * 5. Terminaldeki QR kodu telefondan okutun (WhatsApp > Bagli Cihazlar > Cihaz Bagla)
+ * 6. Bir kere okutunca session kaydedilir, sonraki seferlerde otomatik baglanir.
+ *
+ * ONEMLI: Her subenin SUBE_KODU farkli olmali!
+ * Ornek: Ankara subesi -> "ANK", Gebze subesi -> "GBZ"
+ * Sube kodu Supabase kullanicilar tablosundaki sube_kodu alani ile ayni olmali.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -24,14 +25,21 @@ import qrcode from "qrcode-terminal";
 // ===================== AYARLAR =====================
 const SUPABASE_URL = "BURAYA_SUPABASE_URL_YAZIN";
 const SUPABASE_KEY = "BURAYA_SUPABASE_ANON_KEY_YAZIN";
+const SUBE_KODU = "BURAYA_SUBE_KODU_YAZIN"; // Ornek: "ANK", "GBZ", "IST"
 const KONTROL_ARALIGI = 5000; // 5 saniye (ms)
 // ===================================================
 
+if (SUBE_KODU === "BURAYA_SUBE_KODU_YAZIN") {
+  console.log("[HATA] Lutfen bot.js dosyasindaki SUBE_KODU degerini doldurun!");
+  console.log("[BILGI] Ornek: const SUBE_KODU = \"GBZ\";");
+  process.exit(1);
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// WhatsApp client - LocalAuth ile session otomatik kaydedilir
+// WhatsApp client - sube koduna gore ayri session klasoru
 const whatsapp = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({ clientId: `sube-${SUBE_KODU}` }),
   puppeteer: {
     headless: true,
     args: [
@@ -52,7 +60,8 @@ let hazir = false;
 whatsapp.on("qr", (qr) => {
   console.log("");
   console.log("=".repeat(50));
-  console.log("  QR KODU ASAGIDA - TELEFONDAN OKUTUN");
+  console.log(`  QR KODU - SUBE: ${SUBE_KODU}`);
+  console.log("  Telefondan okutun:");
   console.log("  WhatsApp > Bagli Cihazlar > Cihaz Bagla");
   console.log("=".repeat(50));
   console.log("");
@@ -64,20 +73,19 @@ whatsapp.on("ready", () => {
   hazir = true;
   console.log("");
   console.log("=".repeat(50));
-  console.log("  WHATSAPP BAGLANDI!");
+  console.log(`  WHATSAPP BAGLANDI! [SUBE: ${SUBE_KODU}]`);
+  console.log(`  Sadece "${SUBE_KODU}" subesinin mesajlari islenecek`);
   console.log(`  Bot calisiyor (her ${KONTROL_ARALIGI / 1000}sn kontrol)`);
   console.log("  Durdurmak icin CTRL+C basin");
   console.log("=".repeat(50));
   console.log("");
 
-  // Periyodik kontrol baslat
   setInterval(kontrolDongusu, KONTROL_ARALIGI);
-  // Ilk kontrolu hemen yap
   kontrolDongusu();
 });
 
 whatsapp.on("authenticated", () => {
-  console.log("[OK] WhatsApp oturumu dogrulandi (session kaydedildi)");
+  console.log(`[OK] WhatsApp oturumu dogrulandi [SUBE: ${SUBE_KODU}]`);
 });
 
 whatsapp.on("auth_failure", (msg) => {
@@ -108,10 +116,9 @@ async function mesajGonder(telefon, mesaj) {
     const numara = telefonFormatla(telefon);
     const chatId = numara + "@c.us";
 
-    // Numaranin WhatsApp'ta kayitli olup olmadigini kontrol et
     const kayitli = await whatsapp.isRegisteredUser(chatId);
     if (!kayitli) {
-      console.log(`  [UYARI] ${telefon} WhatsApp'ta kayitli degil, mesaj atilamadi`);
+      console.log(`  [UYARI] ${telefon} WhatsApp'ta kayitli degil`);
       return false;
     }
 
@@ -132,13 +139,14 @@ async function otpKontrol() {
       .from("otp_requests")
       .select("*")
       .eq("status", "pending")
+      .eq("sube_kodu", SUBE_KODU)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
     if (!data || data.length === 0) return;
 
     for (const row of data) {
-      console.log(`[OTP] Dogrulama kodu gonderiliyor: ${row.phone_number} -> ${row.otp_code}`);
+      console.log(`[OTP] [${SUBE_KODU}] Kod gonderiliyor: ${row.phone_number}`);
 
       const mesaj =
         `*Kargo Takip Dogrulama*\n\n` +
@@ -166,13 +174,14 @@ async function bildirimKontrol() {
       .from("whatsapp_messages")
       .select("*")
       .eq("status", "pending")
+      .eq("sube_kodu", SUBE_KODU)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
     if (!data || data.length === 0) return;
 
     for (const row of data) {
-      console.log(`[BILDIRIM] Kargo bildirimi gonderiliyor: ${row.phone_number}`);
+      console.log(`[BILDIRIM] [${SUBE_KODU}] Gonderiliyor: ${row.phone_number}`);
 
       const basarili = await mesajGonder(row.phone_number, row.message);
       const yeniDurum = basarili ? "sent" : "failed";
@@ -198,11 +207,11 @@ async function kontrolDongusu() {
 // ==================== BASLATMA ====================
 
 console.log("=".repeat(50));
-console.log("  KARGO TAKIP - WHATSAPP BOT");
+console.log(`  KARGO TAKIP - WHATSAPP BOT [SUBE: ${SUBE_KODU}]`);
 console.log("=".repeat(50));
+console.log(`[BILGI] Sube kodu: ${SUBE_KODU}`);
+console.log(`[BILGI] Sadece bu subeye ait mesajlar islenecek`);
 console.log("[BASLATILIYOR] WhatsApp baglantisi kuruluyor...");
-console.log("[BILGI] Ilk seferde QR kod terminalde gozukecek");
-console.log("[BILGI] Telefondan okutun, session otomatik kaydedilir");
 console.log("");
 
 whatsapp.initialize();

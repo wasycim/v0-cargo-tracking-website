@@ -11,6 +11,7 @@ export interface KullaniciInfo {
   soyad: string
   telefon: string
   sube: string
+  sube_kodu: string
 }
 
 interface LoginPageProps {
