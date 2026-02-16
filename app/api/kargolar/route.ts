@@ -26,9 +26,10 @@ export async function GET(request: Request) {
   }
 
   // Map DB fields to frontend Cargo interface
+  const validStatuses = ["yuklenecek", "giden", "gonderildi", "teslim", "iptal"]
   const cargos = (data || []).map((row: Record<string, unknown>) => ({
     id: row.id,
-    status: row.status,
+    status: validStatuses.includes(row.status as string) ? row.status : "yuklenecek",
     trackingNo: row.tracking_no,
     pieces: row.pieces,
     sender: row.sender,
