@@ -258,6 +258,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       arrivalDate: "",
       arrivalTime: "",
       plate: "",
+      gonderimTipi: gonderimTipi,
       createdAt: now.toISOString(),
     }
 

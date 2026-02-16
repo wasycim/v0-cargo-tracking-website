@@ -38,19 +38,17 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
   const [searchText, setSearchText] = useState("")
   const [queryDates, setQueryDates] = useState({ start: today, end: today })
 
-  // Her gece 00:00'da kasa otomatik sifirlanir - tarih degisikligini izle
   useEffect(() => {
     const checkMidnight = () => {
       const now = new Date()
       const newToday = now.toISOString().split("T")[0]
       if (newToday !== today) {
-        // Gun degisti, kasa sifirlandi
         setStartDate(newToday)
         setEndDate(newToday)
         setQueryDates({ start: newToday, end: newToday })
       }
     }
-    const interval = setInterval(checkMidnight, 30000) // 30 saniyede bir kontrol
+    const interval = setInterval(checkMidnight, 30000)
     return () => clearInterval(interval)
   }, [today])
 
@@ -97,7 +95,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
     )
   }, [kasaIslemleri, searchText])
 
-  // Anlik kasa - sadece bugunun islemlerini sayar (gece 00:00'da sifirlanir)
   const anlikKasa = useMemo(() => {
     const { start, end } = getTodayRange()
     return cargos
@@ -113,16 +110,15 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
 
   return (
     <div className="p-4">
-      <h1 className="mb-6 text-xl font-bold text-foreground">Kasa {"\u0130\u015flemleri"}</h1>
+      <h1 className="mb-6 text-xl font-bold text-foreground">{"Kasa \u0130\u015flemleri"}</h1>
 
-      {/* Kasa Bilgisi */}
       <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-2">
           <span className="text-sm font-medium text-muted-foreground">Kasa Bilgisi</span>
         </div>
         <div className="p-5">
           <p className="mb-2 text-sm text-muted-foreground">
-            Kasa her gece 00:00{"'"}da otomatik olarak s\u0131f\u0131rlan\u0131r.
+            {"Kasa her gece 00:00'da otomatik olarak s\u0131f\u0131rlan\u0131r."}
           </p>
           <p className="text-sm text-foreground">
             <span className="font-semibold">{"\u015eube"} : </span>{sube}{" "}
@@ -134,7 +130,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
         </div>
       </div>
 
-      {/* Kriterler */}
       <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
         <div className="border-b border-border px-4 py-2">
           <span className="text-sm font-medium text-muted-foreground">Kriterler</span>
@@ -162,7 +157,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
         </div>
       </div>
 
-      {/* Search & Table */}
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
@@ -173,7 +167,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
               onChange={(e) => setSearchText(e.target.value)}
               className="h-8 w-48 border-border bg-background text-xs"
             />
-            <button className="rounded border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted">Git</button>
           </div>
         </div>
 
@@ -187,7 +180,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
                 <TableHead className="font-semibold text-foreground">{"\u0130\u015flem T\u00fcr\u00fc"}</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Devreden Tutar</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Genel Toplam</TableHead>
-                <TableHead className="font-semibold text-foreground">{"A\u00e7\u0131klama"}</TableHead>
                 <TableHead className="font-semibold text-foreground">{"\u0130\u015flem Tarihi"}</TableHead>
                 <TableHead className="font-semibold text-foreground">Personel</TableHead>
               </TableRow>
@@ -195,7 +187,7 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
             <TableBody>
               {filteredIslemler.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                     {"Se\u00e7ilen tarih aral\u0131\u011f\u0131nda i\u015flem bulunamad\u0131."}
                   </TableCell>
                 </TableRow>
@@ -216,7 +208,6 @@ export function KasaIslemleri({ cargos, kullaniciSube }: KasaIslemleriProps) {
                     </TableCell>
                     <TableCell className="text-right text-sm text-foreground">{k.devredenTutar.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right text-sm font-medium text-foreground">{k.genelToplam.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{k.aciklama || "-"}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-foreground">{k.islemTarihi}</TableCell>
                     <TableCell className="text-sm text-foreground">{k.personel}</TableCell>
                   </TableRow>

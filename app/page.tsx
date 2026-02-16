@@ -310,9 +310,34 @@ export default function Page() {
       setCargos((prev) => prev.map((c) => c.id === cargoId ? { ...c, ...updates } : c))
       updateCargoDB(cargoId, updates)
       setLoadingCargo(null)
-      showToast("Kargo yüklendi")
+      showToast("Kargo y\u00fcklendi")
+
+      // Gonderim tipine gore SMS bildirim gonder
+      const cargo = cargos.find((c) => c.id === cargoId)
+      if (cargo) {
+        const smsNumaralari: string[] = []
+        const tip = cargo.gonderimTipi || "ah"
+
+        // ah = alici haberli, gh = gonderici haberli, agh = her ikisi
+        if ((tip === "ah" || tip === "agh") && cargo.receiverTelefon) {
+          smsNumaralari.push(cargo.receiverTelefon)
+        }
+        if ((tip === "gh" || tip === "agh") && cargo.senderTelefon) {
+          smsNumaralari.push(cargo.senderTelefon)
+        }
+
+        if (smsNumaralari.length > 0) {
+          const mesaj = `${cargo.to}\n${data.firma}\n${data.plaka}\n${data.aracTelefon ? data.aracTelefon : ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
+
+          fetch("/api/sms/notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telefonlar: smsNumaralari, mesaj }),
+          }).catch(() => {})
+        }
+      }
     },
-    [showToast, updateCargoDB]
+    [showToast, updateCargoDB, cargos]
   )
 
   const handleEditSubmit = useCallback(

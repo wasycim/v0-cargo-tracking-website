@@ -21,6 +21,7 @@ export interface Cargo {
   plate: string
   firma?: string
   aracTelefon?: string
+  gonderimTipi?: string // "ah" | "gh" | "agh"
   createdAt?: string
 }
 
