@@ -33,13 +33,28 @@ export const statusLabels: Record<CargoStatus, string> = {
   iptal: "\u0130ptal",
 }
 
-export const statusColors: Record<CargoStatus, { bg: string; text: string; border: string }> = {
+const _statusColors: Record<string, { bg: string; text: string; border: string }> = {
   yuklenecek: { bg: "bg-card", text: "text-cargo-green", border: "border-cargo-green" },
   giden: { bg: "bg-cargo-dark", text: "text-white", border: "border-cargo-dark" },
   gonderildi: { bg: "bg-blue-600", text: "text-white", border: "border-blue-600" },
   teslim: { bg: "bg-emerald-600", text: "text-white", border: "border-emerald-600" },
   iptal: { bg: "bg-red-500", text: "text-white", border: "border-red-500" },
 }
+
+const _defaultColor = { bg: "bg-gray-200", text: "text-gray-700", border: "border-gray-300" }
+
+// Safe accessor - NEVER returns undefined
+export function getStatusColor(status: string): { bg: string; text: string; border: string } {
+  return _statusColors[status] || _defaultColor
+}
+
+// Keep for backward compat but wrapped with Proxy for safety
+export const statusColors = new Proxy(_statusColors, {
+  get(target, prop) {
+    if (typeof prop === "string") return target[prop] || _defaultColor
+    return Reflect.get(target, prop)
+  }
+})
 
 // Turkey cities and districts for location picker
 export const turkeyLocations: Record<string, string[]> = {

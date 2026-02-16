@@ -2,7 +2,7 @@
 
 import { Menu, RefreshCw, Pencil, Copy, Check, Barcode, Eye, X } from "lucide-react"
 import type { Cargo } from "@/lib/cargo-data"
-import { statusColors, statusLabels } from "@/lib/cargo-data"
+import { getStatusColor, statusLabels } from "@/lib/cargo-data"
 import {
   Table,
   TableBody,
@@ -28,8 +28,7 @@ interface CargoTableProps {
 }
 
 function StatusBadge({ status }: { status: Cargo["status"] }) {
-  const fallback = { bg: "bg-gray-200", text: "text-gray-700", border: "border-gray-300" }
-  const colors = statusColors[status] || fallback
+  const colors = getStatusColor(status)
   const label = statusLabels[status] || status || "Bilinmiyor"
   return (
     <span className={`inline-block rounded px-3 py-1 text-xs font-semibold ${colors.bg} ${colors.text} border ${colors.border}`}>
