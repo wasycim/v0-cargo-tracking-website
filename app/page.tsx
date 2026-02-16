@@ -54,6 +54,7 @@ export default function Page() {
   const [cargos, setCargos] = useState<Cargo[]>([])
   const [filters, setFilters] = useState({
     giden: true,
+    gonderildi: false,
     eskiAktif: false,
     iptal: false,
   })
@@ -139,20 +140,22 @@ export default function Page() {
     setSubeAyarlar(null)
   }, [])
 
-  // Aktif kargolar (yuklenecek + giden)
+  // Aktif kargolar
   const filteredCargos = useMemo(() => {
     const now = new Date()
-    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
     return cargos.filter((cargo) => {
+      // "Eski Kargolari Goruntule" kapali ise sadece bugun olusturulanlari goster
       if (!filters.eskiAktif && cargo.createdAt) {
         const created = new Date(cargo.createdAt)
-        if (created < oneMonthAgo) return false
+        if (created < todayStart) return false
       }
       if (cargo.status === "yuklenecek") return true
       if (cargo.status === "giden") return filters.giden
+      if (cargo.status === "gonderildi") return filters.gonderildi
       if (cargo.status === "iptal") return filters.iptal
-      // gonderildi ve teslim ana listede gosterilmez
+      // teslim ana listede gosterilmez
       return false
     })
   }, [filters, cargos])
