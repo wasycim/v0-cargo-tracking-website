@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CityPicker } from "@/components/city-picker"
+import { SubePicker } from "@/components/sube-picker"
 import type { Cargo } from "@/lib/cargo-data"
 
 interface NewCargoFormProps {
@@ -239,7 +239,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     const newCargo: Cargo = {
       id: `new-${Date.now()}`,
       status: "yuklenecek",
-      trackingNo: `7${String(Math.floor(Math.random() * 100000000)).padStart(8, "0")}`,
+      trackingNo: `7${String(Math.floor(Math.random() * 100)).padStart(2, "0")} ${String(Math.floor(Math.random() * 1000)).padStart(3, "0")} ${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`,
       pieces: Number(adet) || 1,
       sender: `${senderAd} ${senderSoyad}`.trim(),
       senderTelefon: senderTelefon,
@@ -275,7 +275,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       }}
     >
       <div
-        className={`w-full max-w-6xl rounded-xl border border-border bg-card shadow-2xl transition-all duration-300 ease-out ${
+        className={`w-full max-w-7xl rounded-xl border border-border bg-card shadow-2xl transition-all duration-300 ease-out ${
           isVisible && !isClosing
             ? "translate-y-0 scale-100 opacity-100"
             : "translate-y-8 scale-95 opacity-0"
@@ -428,8 +428,8 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Alıcı Şube / İl / İlçe</label>
-                  <CityPicker value={receiverSube} onChange={setReceiverSube} placeholder="İl veya ilçe seçin..." />
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{"Al\u0131c\u0131 \u015eube"}</label>
+                  <SubePicker value={receiverSube} onChange={setReceiverSube} placeholder="Sube seçin..." />
                 </div>
               </div>
             </div>
