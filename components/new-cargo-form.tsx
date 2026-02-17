@@ -239,7 +239,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
     const newCargo: Cargo = {
       id: `new-${Date.now()}`,
       status: "yuklenecek",
-      trackingNo: `203 ${String(Math.floor(Math.random() * 999)).padStart(3, "0")} ${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`,
+      trackingNo: `7${String(Math.floor(Math.random() * 100000000)).padStart(8, "0")}`,
       pieces: Number(adet) || 1,
       sender: `${senderAd} ${senderSoyad}`.trim(),
       senderTelefon: senderTelefon,
@@ -256,6 +256,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       arrivalTime: "",
       plate: "",
       gonderimTipi: gonderimTipi,
+      odemeTipi: odemeTipi,
       createdAt: now.toISOString(),
     }
 
