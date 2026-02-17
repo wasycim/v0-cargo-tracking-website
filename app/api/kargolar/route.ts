@@ -49,6 +49,7 @@ export async function GET(request: Request) {
     firma: row.firma || "",
     aracTelefon: row.arac_telefon || "",
     gonderimTipi: row.gonderim_tipi || "ah",
+    odemeTipi: row.odeme_tipi || "pesin",
     createdAt: row.created_at,
   }))
 
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
       firma: body.firma || null,
       arac_telefon: body.aracTelefon || null,
       gonderim_tipi: body.gonderimTipi || "ah",
+      odeme_tipi: body.odemeTipi || "pesin",
     })
     .select()
     .single()
@@ -115,6 +117,7 @@ export async function POST(request: Request) {
       firma: data.firma || "",
       aracTelefon: data.arac_telefon || "",
       gonderimTipi: data.gonderim_tipi || "ah",
+      odemeTipi: data.odeme_tipi || "pesin",
       createdAt: data.created_at,
     },
   })
@@ -151,6 +154,7 @@ export async function PATCH(request: Request) {
   if (updates.firma !== undefined) dbUpdates.firma = updates.firma
   if (updates.aracTelefon !== undefined) dbUpdates.arac_telefon = updates.aracTelefon
   if (updates.gonderimTipi !== undefined) dbUpdates.gonderim_tipi = updates.gonderimTipi
+  if (updates.odemeTipi !== undefined) dbUpdates.odeme_tipi = updates.odemeTipi
 
   const { error } = await supabase
     .from("kargolar")
