@@ -129,7 +129,9 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
     const fromCity = kullaniciSube || cargo.fromCity || "Gebze"
     const hatName = destCity.toUpperCase() + " HATTI"
     const today = new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
-    const gonderimKodu = "AH P\u00d6"
+    const gonderimMap: Record<string, string> = { ah: "AH", gh: "GH", agh: "AGH" }
+    const odemeMap: Record<string, string> = { pesin: "P\u00d6", kartla: "K\u00d6" }
+    const gonderimKodu = (gonderimMap[cargo.gonderimTipi || "ah"] || "AH") + " " + (odemeMap[cargo.odemeTipi || "pesin"] || "P\u00d6")
     const senderPhone = cargo.senderTelefon ? maskPhone(cargo.senderTelefon) : "(***) *** ** **"
     const receiverPhone = cargo.receiverTelefon ? maskPhone(cargo.receiverTelefon) : "(***) *** ** **"
 
@@ -148,7 +150,7 @@ export function CargoTable({ cargos, onLoadCargo, onEditCargo, onToast, kullanic
         '<div class="from-city">' + fromCity.toUpperCase() + '</div>',
         '</div><div style="text-align:right">',
         '<div class="gonderim-kodu">' + gonderimKodu + '</div>',
-        '<div class="tracking-no">' + cargo.trackingNo + '</div>',
+        '<div class="tracking-no">' + (cargo.trackingNo || "").replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3") + '</div>',
         '<div class="parca-label">' + parcaLabel + '</div>',
         '</div></div>',
         '<div class="hat-name">' + hatName + '</div>',
