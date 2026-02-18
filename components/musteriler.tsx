@@ -172,7 +172,7 @@ function MusteriEkleModal({ onClose, onSave }: { onClose: () => void; onSave: (c
               <span className="inline-block rounded-md bg-cargo-dark px-5 py-2 text-xs font-medium text-white">{"Ger\u00e7ek Ki\u015fi"}</span>
             </div>
             <div className="mb-3">
-              <Input placeholder="TC Kimlik Numaras\u0131" value={tc} onChange={(e) => setTc(e.target.value.replace(/\D/g, "").slice(0, 11))} className="border-border bg-background" maxLength={11} />
+              <Input placeholder="T.C. Kimlik No" value={tc} onChange={(e) => setTc(e.target.value.replace(/\D/g, "").slice(0, 11))} className="border-border bg-background" maxLength={11} />
             </div>
             <div className="mb-3 flex gap-3">
               <Input placeholder="Ad" value={ad} onChange={(e) => setAd(e.target.value)} className="border-border bg-background" />
