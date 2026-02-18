@@ -27,6 +27,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "TC Kimlik No veya şifre hatalı" }, { status: 401 })
     }
 
+    // IP adresini al
+    const forwarded = request.headers.get("x-forwarded-for")
+    const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") || "bilinmiyor"
+
+    // Giris logunu kaydet
+    await supabase.from("user_logs").insert({
+      kullanici_id: data.id,
+      kullanici_ad: data.ad,
+      kullanici_soyad: data.soyad,
+      sube: data.sube,
+      islem_tipi: "giris",
+      ip_adresi: ip,
+    })
+
     return NextResponse.json({
       success: true,
       user: {
