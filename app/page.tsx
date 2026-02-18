@@ -221,7 +221,7 @@ export default function Page() {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id: c.id, status: "gonderildi" }),
-            }).catch(() => {})
+            }).catch(() => { })
             return { ...c, status: "gonderildi" as const }
           }
           return c
@@ -331,13 +331,12 @@ export default function Page() {
 
         if (smsNumaralari.length > 0) {
           const aliciSehir = (cargo.toCity || cargo.to.split("/").pop()?.trim() || "").toUpperCase()
-          const mesaj = `${aliciSehir} KARGOSU\n${data.firma}\n${data.plaka}\n${data.aracTelefon || ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
-
+          const mesaj = `*_${aliciSehir} KARGOSU_*\n*FİRMA:* ${data.firma}\n*PLAKA:* ${data.plaka}\n*TELEFON:* ${data.aracTelefon || ""}\n*KALKIŞ:* ${data.kalkisSaati}\n*VARIŞ:* ${data.varisSaati}`;
           fetch("/api/sms/notify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ telefonlar: smsNumaralari, mesaj }),
-          }).catch(() => {})
+          }).catch(() => { })
         }
       }
     },
@@ -369,7 +368,7 @@ export default function Page() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ telefonlar, mesaj }),
-            }).catch(() => {})
+            }).catch(() => { })
           }
         }
       }
