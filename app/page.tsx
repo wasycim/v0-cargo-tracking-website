@@ -331,8 +331,7 @@ export default function Page() {
 
         if (smsNumaralari.length > 0) {
           const aliciSehir = (cargo.toCity || cargo.to.split("/").pop()?.trim() || "").toUpperCase()
-          const mesaj = `${aliciSehir} KARGOSU\n${data.firma}\n${data.plaka}\n${data.aracTelefon || ""}\nKALKIS: ${data.kalkisSaati}\nVARIS: ${data.varisSaati}`
-
+          const mesaj = `*_${aliciSehir} KARGOSU_*\n*FİRMA:* ${data.firma}\n*PLAKA:* ${data.plaka}\n*TELEFON:* ${data.aracTelefon || ""}\n*KALKIŞ:* ${data.kalkisSaati}\n*VARIŞ:* ${data.varisSaati}`;
           fetch("/api/sms/notify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
