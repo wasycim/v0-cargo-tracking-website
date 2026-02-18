@@ -363,7 +363,7 @@ export default function Page() {
 
           if (telefonlar.length > 0) {
             const sehir = (merged.toCity || merged.to.split("/").pop()?.trim() || "").toUpperCase()
-            const mesaj = `${sehir} KARGOSU (G\u00dcNCELLEME)\n${merged.firma || ""}\n${merged.plate || ""}\n${merged.aracTelefon || ""}\nKALKIS: ${merged.departureTime || ""}\nVARIS: ${merged.arrivalTime || ""}`
+            const mesaj = `*_${sehir} KARGOSU (G\u00dcNCELLEME)_*\n*FİRMA:* ${merged.firma || ""}\n*PLAKA:* ${merged.plate || ""}\n*TELEFON:* ${merged.aracTelefon || ""}\n*KALKIŞ:* ${merged.departureTime || ""}\n*VARIŞ:* ${merged.arrivalTime || ""}`
             fetch("/api/sms/notify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
