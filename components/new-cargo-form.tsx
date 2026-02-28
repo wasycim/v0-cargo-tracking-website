@@ -49,7 +49,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
   const [receiverSube, setReceiverSube] = useState("")
 
   // Shipment state
-  const [gonderimTipi, setGonderimTipi] = useState("ah")
+  const [gonderimTipi, setGonderimTipi] = useState("agh") //wasy
   const [icerik, setIcerik] = useState("")
   const [fiyat, setFiyat] = useState("100")
   const [adet, setAdet] = useState("1")
@@ -450,9 +450,9 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="agh">Alıcı ve Gönderici Haberli</SelectItem> 
                       <SelectItem value="ah">Alıcı Haberli</SelectItem>
                       <SelectItem value="gh">Gönderici Haberli</SelectItem>
-                      <SelectItem value="agh">Alıcı ve Gönderici Haberli</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
