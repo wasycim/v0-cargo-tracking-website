@@ -270,9 +270,9 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
       className={`fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-6 transition-all duration-300 ease-out ${
         isVisible && !isClosing ? "bg-black/50 backdrop-blur-sm" : "bg-black/0"
       }`}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose()
-      }}
+ //     onClick={(e) => {
+ //       if (e.target === e.currentTarget) handleClose()
+ //     }}
     >
       <div
         className={`w-full max-w-6xl rounded-xl border border-border bg-card shadow-2xl transition-all duration-300 ease-out ${
