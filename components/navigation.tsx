@@ -1,10 +1,10 @@
 "use client"
 
-import { Sun, Moon, Settings, LogOut, User } from "lucide-react"
+import { Sun, Moon, Settings, LogOut, User, ScrollText } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 
-export type AppPage = "anasayfa" | "kargolar" | "gonderilenler" | "musteriler" | "kasaislemleri" | "raporlar" | "ayarlar"
+export type AppPage = "anasayfa" | "kargolar" | "gonderilenler" | "musteriler" | "kasaislemleri" | "raporlar" | "ayarlar" | "loglar"
 
 const navItems: { label: string; id: AppPage }[] = [
   { label: "Ana Sayfa", id: "anasayfa" },
@@ -76,6 +76,19 @@ export function Navigation({ activePage, onPageChange, kullaniciAd, kullaniciSoy
         >
           <Settings className="h-4 w-4" />
           <span className="hidden sm:inline">Ayarlar</span>
+        </button>
+
+        <button
+          onClick={() => onPageChange("loglar")}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+            activePage === "loglar"
+              ? "bg-cargo-green/10 text-cargo-green"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+          aria-label="Loglar"
+        >
+          <ScrollText className="h-4 w-4" />
+          <span className="hidden sm:inline">Log</span>
         </button>
 
         {mounted && (

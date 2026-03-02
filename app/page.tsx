@@ -20,6 +20,7 @@ import type { SavedCustomer } from "@/components/musteriler"
 import { KasaIslemleri } from "@/components/kasa-islemleri"
 import { Raporlar } from "@/components/raporlar"
 import { Ayarlar } from "@/components/ayarlar"
+import { KullaniciLog } from "@/components/kullanici-log"
 import { ToastNotification } from "@/components/toast-notification"
 import type { Cargo } from "@/lib/cargo-data"
 
@@ -133,12 +134,25 @@ export default function Page() {
   }, [])
 
   const handleLogout = useCallback(() => {
+    // Cikis logunu kaydet
+    if (kullanici) {
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kullanici_id: kullanici.id,
+          kullanici_ad: kullanici.ad,
+          kullanici_soyad: kullanici.soyad,
+          sube: kullanici.sube,
+        }),
+      }).catch(() => {})
+    }
     setIsLoggedIn(false)
     setKullanici(null)
     localStorage.removeItem("kargo_user")
     setCargos([])
     setSubeAyarlar(null)
-  }, [])
+  }, [kullanici])
 
   // Aktif kargolar
   const filteredCargos = useMemo(() => {
@@ -485,6 +499,15 @@ export default function Page() {
           onToast={(msg) => showToast(msg)}
           kullaniciSube={kullanici?.sube}
           onAyarlarSaved={(a) => setSubeAyarlar(a)}
+        />
+      )}
+
+      {activePage === "loglar" && (
+        <KullaniciLog
+          kullaniciId={kullanici?.id}
+          kullaniciAd={kullanici?.ad}
+          kullaniciSoyad={kullanici?.soyad}
+          kullaniciSube={kullanici?.sube}
         />
       )}
 

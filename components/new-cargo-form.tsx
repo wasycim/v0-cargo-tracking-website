@@ -318,7 +318,7 @@ export function NewCargoForm({ onClose, onSubmit, onCustomerSaved, savedCustomer
 
                 <div className="mb-3">
                   <Input
-                    placeholder="TC Kimlik No"
+                    placeholder="T.C. Kimlik No"
                     value={senderTc}
                     onChange={(e) => setSenderTc(e.target.value.replace(/\D/g, "").slice(0, 11))}
                     className="border-border bg-background"
